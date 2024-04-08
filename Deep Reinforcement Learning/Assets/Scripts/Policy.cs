@@ -14,11 +14,16 @@ public class Policy
 {
     private Dictionary<State, Action> policy = new Dictionary<State, Action>();
 
-    public void InitializePolicy(List<State> states)
+    public void InitializePolicy(List<State> states, GameManager gameManager)
     {
-        foreach (var state in states)
+        foreach (State state in states)
         {
-            policy[state] = (Action)Random.Range(0, 4);  // Choix aléatoire d'une action
+            List<Action> validActions = gameManager.GetValidActions(state);
+            if (validActions.Count > 0)
+            {
+                int index = Random.Range(0, validActions.Count);
+                policy[state] = validActions[index];  // Choix aléatoire d'une action valide
+            }
         }
     }
 
