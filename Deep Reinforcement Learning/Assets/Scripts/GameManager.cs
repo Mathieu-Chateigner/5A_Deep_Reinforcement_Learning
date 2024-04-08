@@ -23,12 +23,17 @@ public class GameManager : MonoBehaviour
         policy.InitializePolicy(states, this);
 
         InitializeStateValues(states);
-        PolicyEvaluation(states, 0.9f);
 
+        printCoordinates();
+
+        // Policy iteration pipeline
+        /*PolicyEvaluation(states, 0.9f);
+        PolicyImprovement(states);*/
+
+        // Value iteration pipeline
         printPolicy();
+        ValueIteration(states, 0.9f);
         printStateValues();
-
-        PolicyImprovement(states);
         printPolicy();
     }
 
@@ -36,8 +41,10 @@ public class GameManager : MonoBehaviour
     {
         obstacles = new List<State>
         {
-            // Ajoutez ici vos obstacles
-            // Exemple : new State(1, 1), new State(2, 2)
+            // On ajoute nos obstacles içi
+            //new State(1, 1),
+            //new State(2, 2),
+            //new State(4, 0)
         };
     }
 
@@ -83,7 +90,7 @@ public class GameManager : MonoBehaviour
 
                 Action action = policy.GetAction(state);
                 State nextState = GetNextState(state, action);
-                float reward = GetImmediateReward(state, action, nextState);
+                float reward = GetImmediateReward(state, action);
                 float newValue = reward + (discountFactor * stateValues[nextState]);
                 
 
@@ -94,10 +101,11 @@ public class GameManager : MonoBehaviour
         } while (delta > theta);
     }*/
 
-    void PolicyEvaluation(List<State> states, float discountFactor)
+    // Should be ok
+    void ValueIteration(List<State> states, float discountFactor)
     {
         float theta = 0.001f; // Seuil pour déterminer quand arrêter l'itération
-        float delta = 0f;
+        float delta;
         do
         {
             delta = 0f;
@@ -106,20 +114,29 @@ public class GameManager : MonoBehaviour
                 if (IsEnd(state)) continue;
 
                 float oldValue = stateValues[state];
-                float valueSum = 0f;
-                
+
+                // On prend seulement le max des actions possibles
+                float maxValue = Mathf.NegativeInfinity;
+                Action bestAction = Action.Up; // Default
                 foreach (Action action in GetValidActions(state))
                 {
                     State nextState = GetNextState(state, action);
-                    float reward = GetImmediateReward(state, action, nextState);
-                    valueSum += reward + (discountFactor * stateValues[nextState]);
+
+                    float reward = IsEnd(nextState) ? 0f : GetImmediateReward(state, action); // To fix values between 0 and 1
+                    float value = reward + (discountFactor * stateValues[nextState]);
+                    if (value > maxValue)
+                    {
+                        maxValue = value;
+                        bestAction = action;
+                    }
                 }
+                
+                stateValues[state] = maxValue;
 
-                // Assurez-vous de diviser par le nombre d'actions si vous souhaitez faire la moyenne
-                float newValue = valueSum / GetValidActions(state).Count;
-                stateValues[state] = newValue;
+                // Update policy
+                policy.UpdatePolicy(state, bestAction);
 
-                delta = Mathf.Max(delta, Mathf.Abs(oldValue - newValue));
+                delta = Mathf.Max(delta, Mathf.Abs(oldValue - maxValue));
             }
         } while (delta > theta);
     }
@@ -145,48 +162,27 @@ public class GameManager : MonoBehaviour
                 }
             }
             //Debug.Log("["+ state.X +","+ state.Y +"] =>"+ bestValue);
-            Debug.Log("[" + state.X + "," + state.Y + "] =>" + GetValidActions(state).Count);
+            //Debug.Log("[" + state.X + "," + state.Y + "] =>" + GetValidActions(state).Count) ;
             // Mettre à jour la politique pour cet état avec la meilleure action trouvée
             policy.UpdatePolicy(state, bestAction);
         }
     }
 
-    public float GetImmediateReward(State currentState, Action action, State nextState)
+    public float GetImmediateReward(State currentState, Action action)
     {
+        State nextState = GetNextState(currentState, action);
         if (nextState.Equals(end))
         {
             return 1.0f;
         }
+        else if (obstacles.Contains(nextState))
+        {
+            return -1.0f;
+        }
         else
         {
-            return -.05f;
+            return 0.0f;
         }
-    }
-
-    // deprecated
-    public float GetRewardByPolicy(State state)
-    {
-        State nextStateByPolicy = GetNextState(state, policy.GetAction(state));
-        if (!stateValues.ContainsKey(nextStateByPolicy)) return 0f;
-        return stateValues[nextStateByPolicy];
-    }
-
-    // deprecated
-    private float SumOfNextStateValues(State state)
-    {
-        float sum = 0f;
-
-        // Pour un modèle déterministe (prendre en compte les probalités de transition pour un modèle stochastique)
-        foreach (Action action in System.Enum.GetValues(typeof(Action)))
-        {
-            State nextState = GetNextState(state, action);
-
-            if (!obstacles.Contains(nextState) && !nextState.Equals(state))
-            {
-                sum += stateValues[nextState];
-            }
-        }
-        return sum;
     }
     
     public State GetNextState(State state, Action action)
@@ -196,13 +192,13 @@ public class GameManager : MonoBehaviour
         switch (action)
         {
             case Action.Up:
-                nextState.Y = Mathf.Max(nextState.Y - 1, 0);
+                nextState.Y = nextState.Y + 1;
                 break;
             case Action.Right:
                 nextState.X = Mathf.Min(nextState.X + 1, gridSize.x - 1);
                 break;
             case Action.Down:
-                nextState.Y = Mathf.Min(nextState.Y + 1, gridSize.y - 1);
+                nextState.Y = nextState.Y - 1;
                 break;
             case Action.Left:
                 nextState.X = Mathf.Max(nextState.X - 1, 0);
@@ -264,9 +260,9 @@ public class GameManager : MonoBehaviour
                 }
                 line += value + "\t";
             }
-            gridPolicy += line + "\n"; // Ajoutez la ligne à la représentation de la grille
+            gridPolicy += line + "\n";
         }
-        Debug.Log(gridPolicy); // Affichez la grille dans la console Unity
+        Debug.Log(gridPolicy);
     }
 
     private void printStateValues()
@@ -278,11 +274,27 @@ public class GameManager : MonoBehaviour
             for (int x = 0; x < gridSize.x; x++)
             {
                 State state = new State(x, y);
-                float value = stateValues.ContainsKey(state) ? stateValues[state] : 0f; // Obtenez la valeur de l'état, ou 0 si non défini
+                float value = stateValues.ContainsKey(state) ? stateValues[state] : 0f;
                 line += value.ToString("F2") + "\t";
             }
-            gridRepresentation += line + "\n"; // Ajoutez la ligne à la représentation de la grille
+            gridRepresentation += line + "\n";
         }
-        Debug.Log(gridRepresentation); // Affichez la grille dans la console Unity
+        Debug.Log(gridRepresentation);
+    }
+
+    private void printCoordinates()
+    {
+        string gridCoordinates = "Grid Coordinates:\n";
+        for (int y = gridSize.y - 1; y >= 0; y--)
+        {
+            string line = "";
+            for (int x = 0; x < gridSize.x; x++)
+            {
+                State state = new State(x, y);
+                line += state.X +","+ state.Y +"\t";
+            }
+            gridCoordinates += line + "\n";
+        }
+        Debug.Log(gridCoordinates);
     }
 }
