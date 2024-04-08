@@ -27,6 +27,9 @@ public class GameManager : MonoBehaviour
 
         printPolicy();
         printStateValues();
+
+        PolicyImprovement(states);
+        printPolicy();
     }
 
     void InitializeObstacles()
@@ -65,9 +68,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void PolicyEvaluation(List<State> states, float discountFactor)
+    /*void PolicyEvaluation(List<State> states, float discountFactor)
     {
-        float theta = 0.1f; // Seuil pour déterminer quand arrêter l'itération
+        float theta = 0.01f; // Seuil pour déterminer quand arrêter l'itération
         float delta = 0f;
         do
         {
@@ -89,6 +92,63 @@ public class GameManager : MonoBehaviour
                 delta = Mathf.Max(delta, Mathf.Abs(oldValue - newValue));
             }
         } while (delta > theta);
+    }*/
+
+    void PolicyEvaluation(List<State> states, float discountFactor)
+    {
+        float theta = 0.001f; // Seuil pour déterminer quand arrêter l'itération
+        float delta = 0f;
+        do
+        {
+            delta = 0f;
+            foreach (State state in states)
+            {
+                if (IsEnd(state)) continue;
+
+                float oldValue = stateValues[state];
+                float valueSum = 0f;
+                
+                foreach (Action action in GetValidActions(state))
+                {
+                    State nextState = GetNextState(state, action);
+                    float reward = GetImmediateReward(state, action, nextState);
+                    valueSum += reward + (discountFactor * stateValues[nextState]);
+                }
+
+                // Assurez-vous de diviser par le nombre d'actions si vous souhaitez faire la moyenne
+                float newValue = valueSum / GetValidActions(state).Count;
+                stateValues[state] = newValue;
+
+                delta = Mathf.Max(delta, Mathf.Abs(oldValue - newValue));
+            }
+        } while (delta > theta);
+    }
+
+    public void PolicyImprovement(List<State> states)
+    {
+        foreach (State state in states)
+        {
+            if (IsEnd(state)) continue; // Aucune action requise pour les états terminaux
+
+            Action bestAction = Action.Up; // Valeur par défaut, sera remplacée
+            float bestValue = float.NegativeInfinity;
+
+            foreach (Action action in GetValidActions(state))
+            {
+                State nextState = GetNextState(state, action);
+                float value = stateValues[nextState];
+
+                if (value > bestValue)
+                {
+                    bestValue = value;
+                    bestAction = action;
+                }
+            }
+            //Debug.Log("["+ state.X +","+ state.Y +"] =>"+ bestValue);
+            Debug.Log("[" + state.X + "," + state.Y + "] =>" + GetValidActions(state).Count);
+            // Mettre à jour la politique pour cet état avec la meilleure action trouvée
+            policy.UpdatePolicy(state, bestAction);
+        }
     }
 
     public float GetImmediateReward(State currentState, Action action, State nextState)
@@ -99,10 +159,11 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            return .05f;
+            return -.05f;
         }
     }
 
+    // deprecated
     public float GetRewardByPolicy(State state)
     {
         State nextStateByPolicy = GetNextState(state, policy.GetAction(state));
@@ -110,6 +171,7 @@ public class GameManager : MonoBehaviour
         return stateValues[nextStateByPolicy];
     }
 
+    // deprecated
     private float SumOfNextStateValues(State state)
     {
         float sum = 0f;
@@ -125,11 +187,6 @@ public class GameManager : MonoBehaviour
             }
         }
         return sum;
-    }
-
-    public bool IsEnd(State state)
-    {
-        return state.Equals(end);
     }
     
     public State GetNextState(State state, Action action)
@@ -172,6 +229,11 @@ public class GameManager : MonoBehaviour
         // Check aussi les obstacles
 
         return validActions;
+    }
+
+    public bool IsEnd(State state)
+    {
+        return state.Equals(end);
     }
 
     private void printPolicy()
