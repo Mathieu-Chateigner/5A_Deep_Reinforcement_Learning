@@ -15,11 +15,11 @@ public class TilemapManager : MonoBehaviour
     private State _start;
     private State _end;
 
-    private void Start()
+    private void Awake()
     {
         Instance = this;
     }
-
+    
     public void SetStartingValues(State start, State end)
     {
         _start = start;
