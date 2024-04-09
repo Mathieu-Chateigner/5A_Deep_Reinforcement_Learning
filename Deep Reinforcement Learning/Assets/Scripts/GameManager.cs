@@ -26,13 +26,11 @@ public class GameManager : MonoBehaviour
 
         printCoordinates();
 
-        // Policy iteration pipeline
-        /*PolicyEvaluation(states, 0.9f);
-        PolicyImprovement(states);*/
-
-        // Value iteration pipeline
         printPolicy();
-        ValueIteration(states, 0.9f);
+
+        PolicyIteration(states, 0.9f); // Policy iteration
+        //ValueIteration(states, 0.9f); // Value iteration
+
         printStateValues();
         printPolicy();
     }
@@ -42,7 +40,11 @@ public class GameManager : MonoBehaviour
         obstacles = new List<State>
         {
             // On ajoute nos obstacles içi
-            //new State(1, 1),
+            new State(3, 2),
+            new State(2, 2),
+            new State(4, 2),
+            new State(2, 3),
+            new State(4, 3),
             //new State(2, 2),
             //new State(4, 0)
         };
@@ -75,10 +77,21 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /*void PolicyEvaluation(List<State> states, float discountFactor)
+    void PolicyIteration(List<State> states, float discountFactor)
     {
-        float theta = 0.01f; // Seuil pour déterminer quand arrêter l'itération
-        float delta = 0f;
+        bool policyStable = false;
+        do
+        {
+            PolicyEvaluation(states, discountFactor);
+
+            policyStable = PolicyImprovement(states);
+        } while (!policyStable);
+    }
+
+    void PolicyEvaluation(List<State> states, float discountFactor)
+    {
+        float theta = 0.001f; // Seuil pour déterminer quand arrêter l'itération
+        float delta;
         do
         {
             delta = 0f;
@@ -90,18 +103,48 @@ public class GameManager : MonoBehaviour
 
                 Action action = policy.GetAction(state);
                 State nextState = GetNextState(state, action);
-                float reward = GetImmediateReward(state, action);
-                float newValue = reward + (discountFactor * stateValues[nextState]);
-                
+                float reward = IsEnd(nextState) ? 0f : GetImmediateReward(state, action);
+                stateValues[state] = reward + (discountFactor * stateValues[nextState]);
 
-                stateValues[state] = newValue;
-
-                delta = Mathf.Max(delta, Mathf.Abs(oldValue - newValue));
+                delta = Mathf.Max(delta, Mathf.Abs(oldValue - stateValues[state]));
             }
         } while (delta > theta);
-    }*/
+    }
 
-    // Should be ok
+    public bool PolicyImprovement(List<State> states)
+    {
+        bool policyStable = true;
+
+        foreach (State state in states)
+        {
+            if (IsEnd(state)) continue; // Aucune action requise pour les états terminaux
+
+            Action oldAction = policy.GetAction(state);
+            float maxValue = float.NegativeInfinity;
+            Action bestAction = oldAction; // Default
+            foreach (Action action in GetValidActions(state))
+            {
+                State nextState = GetNextState(state, action);
+                float value = stateValues[nextState];
+
+                if (value > maxValue)
+                {
+                    maxValue = value;
+                    bestAction = action;
+                }
+            }
+
+            if (oldAction != bestAction)
+            {
+                policyStable = false;
+                policy.UpdatePolicy(state, bestAction);
+            }
+        }
+
+        return policyStable;
+    }
+
+    // OK
     void ValueIteration(List<State> states, float discountFactor)
     {
         float theta = 0.001f; // Seuil pour déterminer quand arrêter l'itération
@@ -116,7 +159,7 @@ public class GameManager : MonoBehaviour
                 float oldValue = stateValues[state];
 
                 // On prend seulement le max des actions possibles
-                float maxValue = Mathf.NegativeInfinity;
+                float maxValue = float.NegativeInfinity;
                 Action bestAction = Action.Up; // Default
                 foreach (Action action in GetValidActions(state))
                 {
@@ -139,33 +182,6 @@ public class GameManager : MonoBehaviour
                 delta = Mathf.Max(delta, Mathf.Abs(oldValue - maxValue));
             }
         } while (delta > theta);
-    }
-
-    public void PolicyImprovement(List<State> states)
-    {
-        foreach (State state in states)
-        {
-            if (IsEnd(state)) continue; // Aucune action requise pour les états terminaux
-
-            Action bestAction = Action.Up; // Valeur par défaut, sera remplacée
-            float bestValue = float.NegativeInfinity;
-
-            foreach (Action action in GetValidActions(state))
-            {
-                State nextState = GetNextState(state, action);
-                float value = stateValues[nextState];
-
-                if (value > bestValue)
-                {
-                    bestValue = value;
-                    bestAction = action;
-                }
-            }
-            //Debug.Log("["+ state.X +","+ state.Y +"] =>"+ bestValue);
-            //Debug.Log("[" + state.X + "," + state.Y + "] =>" + GetValidActions(state).Count) ;
-            // Mettre à jour la politique pour cet état avec la meilleure action trouvée
-            policy.UpdatePolicy(state, bestAction);
-        }
     }
 
     public float GetImmediateReward(State currentState, Action action)
@@ -195,13 +211,13 @@ public class GameManager : MonoBehaviour
                 nextState.Y = nextState.Y + 1;
                 break;
             case Action.Right:
-                nextState.X = Mathf.Min(nextState.X + 1, gridSize.x - 1);
+                nextState.X = nextState.X + 1;
                 break;
             case Action.Down:
                 nextState.Y = nextState.Y - 1;
                 break;
             case Action.Left:
-                nextState.X = Mathf.Max(nextState.X - 1, 0);
+                nextState.X = nextState.X - 1;
                 break;
         }
 
