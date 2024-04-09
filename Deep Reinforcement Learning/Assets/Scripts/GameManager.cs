@@ -1,45 +1,52 @@
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class GameManager : MonoBehaviour
 {
     public Vector2Int gridSize;
-    public State start;
-    public State end;
-    public List<State> obstacles;
+    public Camera camera;
+    public Tilemap tilemapGridWorld;
+    public List<Tile> tileList;
+    
+    private State _start;
+    private State _end;
+    private List<State> _obstacles;
+    private Policy _policy;
+    private Dictionary<State, float> _stateValues; // Used by PolicyEvaluation
+    private Dictionary<State, Tile> _dictTileForState = new();
+    private List<State> _states;
 
-    private Policy policy;
-    private Dictionary<State, float> stateValues; // Used by PolicyEvaluation
-
-    void Start()
+    private void Start()
     {
+        camera.transform.position = new Vector3(gridSize.x/2, gridSize.y/2, -10);
         InitializeObstacles();
-        List<State> states = GenerateAllStates();
+        _states = GenerateAllStates();
+        
+        _start = new State(0, 0);
+        _end = new State(3, 3);
+        _policy = new Policy();
+        StartCoroutine(_policy.InitializePolicy(_states, this, tilemapGridWorld, tileList));
 
-        start = new State(0, 0);
-        end = new State(3, 3);
-        policy = new Policy();
-        policy.InitializePolicy(states, this);
+        InitializeStateValues();
 
-        InitializeStateValues(states);
-
-        printCoordinates();
+        PrintCoordinates();
 
         // Policy iteration pipeline
         /*PolicyEvaluation(states, 0.9f);
         PolicyImprovement(states);*/
 
         // Value iteration pipeline
-        printPolicy();
-        ValueIteration(states, 0.9f);
-        printStateValues();
-        printPolicy();
+        PrintPolicy();
+        //ValueIteration(0.9f);
+        PrintStateValues();
+        PrintPolicy();
     }
 
-    void InitializeObstacles()
+    private void InitializeObstacles()
     {
-        obstacles = new List<State>
+        _obstacles = new List<State>
         {
             // On ajoute nos obstacles içi
             //new State(1, 1),
@@ -48,30 +55,29 @@ public class GameManager : MonoBehaviour
         };
     }
 
-    List<State> GenerateAllStates()
+    private List<State> GenerateAllStates()
     {
-        List<State> states = new List<State>();
-        for (int x = 0; x < gridSize.x; x++)
+        var states = new List<State>();
+        for (var x = 0; x < gridSize.x; x++)
         {
-            for (int y = 0; y < gridSize.y; y++)
+            for (var y = 0; y < gridSize.y; y++)
             {
-                State newState = new State(x, y);
-                if (!obstacles.Contains(newState))
-                {
-                    states.Add(newState);
-                }
+                var newState = new State(x, y);
+                if (_obstacles.Contains(newState)) continue;
+                states.Add(newState);
+                tilemapGridWorld.SetTile(new Vector3Int(x,y,0), tileList.First(tile => tile.name.Equals("question_mark")));
             }
         }
         return states;
     }
 
-    void InitializeStateValues(List<State> states)
+    private void InitializeStateValues()
     {
-        stateValues = new Dictionary<State, float>();
-        foreach (var state in states)
+        _stateValues = new Dictionary<State, float>();
+        foreach (var state in _states)
         {
             // Tous les états ont une valeur par défaut de 0, sauf l'état final qui a une valeur de 1
-            stateValues[state] = state.Equals(end) ? 1f : 0f;
+            _stateValues[state] = state.Equals(_end) ? 1f : 0f;
         }
     }
 
@@ -102,39 +108,37 @@ public class GameManager : MonoBehaviour
     }*/
 
     // Should be ok
-    void ValueIteration(List<State> states, float discountFactor)
+    public void ValueIteration(float discountFactor)
     {
-        float theta = 0.001f; // Seuil pour déterminer quand arrêter l'itération
+        const float theta = 0.001f; // Seuil pour déterminer quand arrêter l'itération
         float delta;
         do
         {
             delta = 0f;
-            foreach (State state in states)
+            foreach (var state in _states)
             {
                 if (IsEnd(state)) continue;
 
-                float oldValue = stateValues[state];
+                var oldValue = _stateValues[state];
 
                 // On prend seulement le max des actions possibles
-                float maxValue = Mathf.NegativeInfinity;
-                Action bestAction = Action.Up; // Default
-                foreach (Action action in GetValidActions(state))
+                var maxValue = Mathf.NegativeInfinity;
+                var bestAction = Action.Up; // Default
+                foreach (var action in GetValidActions(state))
                 {
-                    State nextState = GetNextState(state, action);
+                    var nextState = GetNextState(state, action);
 
-                    float reward = IsEnd(nextState) ? 0f : GetImmediateReward(state, action); // To fix values between 0 and 1
-                    float value = reward + (discountFactor * stateValues[nextState]);
-                    if (value > maxValue)
-                    {
-                        maxValue = value;
-                        bestAction = action;
-                    }
+                    var reward = IsEnd(nextState) ? 0f : GetImmediateReward(state, action); // To fix values between 0 and 1
+                    var value = reward + (discountFactor * _stateValues[nextState]);
+                    if (!(value > maxValue)) continue;
+                    maxValue = value;
+                    bestAction = action;
                 }
                 
-                stateValues[state] = maxValue;
+                _stateValues[state] = maxValue;
 
                 // Update policy
-                policy.UpdatePolicy(state, bestAction);
+                _policy.UpdatePolicy(state, bestAction);
 
                 delta = Mathf.Max(delta, Mathf.Abs(oldValue - maxValue));
             }
@@ -143,51 +147,49 @@ public class GameManager : MonoBehaviour
 
     public void PolicyImprovement(List<State> states)
     {
-        foreach (State state in states)
+        foreach (var state in states)
         {
             if (IsEnd(state)) continue; // Aucune action requise pour les états terminaux
 
-            Action bestAction = Action.Up; // Valeur par défaut, sera remplacée
-            float bestValue = float.NegativeInfinity;
+            var bestAction = Action.Up; // Valeur par défaut, sera remplacée
+            var bestValue = float.NegativeInfinity;
 
-            foreach (Action action in GetValidActions(state))
+            foreach (var action in GetValidActions(state))
             {
-                State nextState = GetNextState(state, action);
-                float value = stateValues[nextState];
+                var nextState = GetNextState(state, action);
+                var value = _stateValues[nextState];
 
-                if (value > bestValue)
-                {
-                    bestValue = value;
-                    bestAction = action;
-                }
+                if (!(value > bestValue)) continue;
+                bestValue = value;
+                bestAction = action;
             }
             //Debug.Log("["+ state.X +","+ state.Y +"] =>"+ bestValue);
             //Debug.Log("[" + state.X + "," + state.Y + "] =>" + GetValidActions(state).Count) ;
             // Mettre à jour la politique pour cet état avec la meilleure action trouvée
-            policy.UpdatePolicy(state, bestAction);
+            _policy.UpdatePolicy(state, bestAction);
         }
     }
 
-    public float GetImmediateReward(State currentState, Action action)
+    private float GetImmediateReward(State currentState, Action action)
     {
-        State nextState = GetNextState(currentState, action);
-        if (nextState.Equals(end))
+        var nextState = GetNextState(currentState, action);
+        
+        if (nextState.Equals(_end))
         {
             return 1.0f;
         }
-        else if (obstacles.Contains(nextState))
+
+        if (_obstacles.Contains(nextState))
         {
             return -1.0f;
         }
-        else
-        {
-            return 0.0f;
-        }
+
+        return 0.0f;
     }
-    
-    public State GetNextState(State state, Action action)
+
+    private State GetNextState(State state, Action action)
     {
-        State nextState = new State(state.X, state.Y);
+        var nextState = new State(state.X, state.Y);
 
         switch (action)
         {
@@ -203,19 +205,16 @@ public class GameManager : MonoBehaviour
             case Action.Left:
                 nextState.X = Mathf.Max(nextState.X - 1, 0);
                 break;
+            default:
+                break;
         }
 
-        if (obstacles.Contains(nextState))
-        {
-            return state;
-        }
-
-        return nextState;
+        return _obstacles.Contains(nextState) ? state : nextState;
     }
 
     public List<Action> GetValidActions(State state)
     {
-        List<Action> validActions = new List<Action>();
+        var validActions = new List<Action>();
 
         if (state.Y < gridSize.y - 1) validActions.Add(Action.Up); // Peut aller vers le haut
         if (state.X < gridSize.x - 1) validActions.Add(Action.Right); // Peut aller vers la droite
@@ -227,37 +226,30 @@ public class GameManager : MonoBehaviour
         return validActions;
     }
 
-    public bool IsEnd(State state)
+    private bool IsEnd(State state)
     {
-        return state.Equals(end);
+        return state.Equals(_end);
     }
 
-    private void printPolicy()
+    private void PrintPolicy()
     {
-        string gridPolicy = "Grid Policy:\n";
-        for (int y = gridSize.y - 1; y >= 0; y--)
+        var gridPolicy = "Grid Policy:\n";
+        for (var y = gridSize.y - 1; y >= 0; y--)
         {
-            string line = "";
-            for (int x = 0; x < gridSize.x; x++)
+            var line = "";
+            for (var x = 0; x < gridSize.x; x++)
             {
-                State state = new State(x, y);
-                string value = "X";
-                Action stateAction = policy.GetAction(state);
-                switch (stateAction)
+                var state = new State(x, y);
+                var value = "X";
+                var stateAction = _policy.GetAction(state);
+                value = stateAction switch
                 {
-                    case Action.Up:
-                        value = "^";
-                        break;
-                    case Action.Right:
-                        value = ">";
-                        break;
-                    case Action.Down:
-                        value = "v";
-                        break;
-                    case Action.Left:
-                        value = "<";
-                        break;
-                }
+                    Action.Up => "^",
+                    Action.Right => ">",
+                    Action.Down => "v",
+                    Action.Left => "<",
+                    _ => value
+                };
                 line += value + "\t";
             }
             gridPolicy += line + "\n";
@@ -265,16 +257,16 @@ public class GameManager : MonoBehaviour
         Debug.Log(gridPolicy);
     }
 
-    private void printStateValues()
+    private void PrintStateValues()
     {
-        string gridRepresentation = "Grid State Values:\n";
-        for (int y = gridSize.y - 1; y >= 0; y--)
+        var gridRepresentation = "Grid State Values:\n";
+        for (var y = gridSize.y - 1; y >= 0; y--)
         {
-            string line = "";
-            for (int x = 0; x < gridSize.x; x++)
+            var line = "";
+            for (var x = 0; x < gridSize.x; x++)
             {
-                State state = new State(x, y);
-                float value = stateValues.ContainsKey(state) ? stateValues[state] : 0f;
+                var state = new State(x, y);
+                var value = _stateValues.ContainsKey(state) ? _stateValues[state] : 0f;
                 line += value.ToString("F2") + "\t";
             }
             gridRepresentation += line + "\n";
@@ -282,15 +274,15 @@ public class GameManager : MonoBehaviour
         Debug.Log(gridRepresentation);
     }
 
-    private void printCoordinates()
+    private void PrintCoordinates()
     {
-        string gridCoordinates = "Grid Coordinates:\n";
-        for (int y = gridSize.y - 1; y >= 0; y--)
+        var gridCoordinates = "Grid Coordinates:\n";
+        for (var y = gridSize.y - 1; y >= 0; y--)
         {
-            string line = "";
-            for (int x = 0; x < gridSize.x; x++)
+            var line = "";
+            for (var x = 0; x < gridSize.x; x++)
             {
-                State state = new State(x, y);
+                var state = new State(x, y);
                 line += state.X +","+ state.Y +"\t";
             }
             gridCoordinates += line + "\n";

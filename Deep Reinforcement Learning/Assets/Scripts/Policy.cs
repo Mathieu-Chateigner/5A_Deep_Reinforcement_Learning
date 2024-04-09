@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public enum Action
 {
@@ -12,39 +14,47 @@ public enum Action
 
 public class Policy
 {
-    private Dictionary<State, Action> policy = new Dictionary<State, Action>();
+    private readonly Dictionary<State, Action> _policy = new ();
+    private Tilemap _tilemap;
+    private List<Tile> _tileList;
 
-    public void InitializePolicy(List<State> states, GameManager gameManager)
+    public IEnumerator InitializePolicy(List<State> states, GameManager gameManager, Tilemap tilemap, List<Tile> tileList)
     {
-        foreach (State state in states)
+        _tilemap = tilemap;
+        _tileList = tileList;
+        
+        foreach (var state in states)
         {
-            List<Action> validActions = gameManager.GetValidActions(state);
-            if (validActions.Count > 0)
-            {
-                int index = Random.Range(0, validActions.Count);
-                policy[state] = validActions[index];  // Choix aléatoire d'une action valide
-            }
+            var validActions = gameManager.GetValidActions(state);
+            if (validActions.Count <= 0) continue;
+            var index = Random.Range(0, validActions.Count);
+            var action = validActions[index];
+            _policy[state] = action;  // Choix aléatoire d'une action valide
+            tilemap.SetTile(new Vector3Int(state.X, state.Y, 0), GetTileFromAction(action));
+            yield return new WaitForSeconds(0.1f);
         }
     }
 
     public Action GetAction(State state)
     {
-        if (policy.ContainsKey(state))
-        {
-            return policy[state];
-        }
-        return Action.Up;  // Valeur par défaut si l'état n'est pas trouvé
+        return _policy.GetValueOrDefault(state, Action.Up); // Valeur par défaut si l'état n'est pas trouvé
     }
 
     public void UpdatePolicy(State state, Action action)
     {
-        if (policy.ContainsKey(state))
+        _policy[state] = action;
+        _tilemap.SetTile(new Vector3Int(state.X, state.Y, 0), GetTileFromAction(action));
+    }
+
+    private Tile GetTileFromAction(Action action)
+    {
+        return action switch
         {
-            policy[state] = action;
-        }
-        else
-        {
-            policy.Add(state, action);
-        }
+            Action.Down => _tileList.First(tile => tile.name.Equals("arrow_down")),
+            Action.Up => _tileList.First(tile => tile.name.Equals("arrow_up")),
+            Action.Left => _tileList.First(tile => tile.name.Equals("arrow_left")),
+            Action.Right => _tileList.First(tile => tile.name.Equals("arrow_right")),
+            _ => _tileList.First(tile => tile.name.Equals("question_mark"))
+        };
     }
 }
