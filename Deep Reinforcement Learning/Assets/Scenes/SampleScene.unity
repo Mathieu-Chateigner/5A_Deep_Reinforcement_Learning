@@ -339,6 +339,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gridSize: {x: 6, y: 6}
+  usePolicyIteration: 0
+  useValueIteration: 0
+  useMonteCarlo: 1
 --- !u!4 &1636797481
 Transform:
   m_ObjectHideFlags: 0
