@@ -23,6 +23,8 @@ public class GameManager : MonoBehaviour
         camera.transform.position = new Vector3(gridSize.x/2, gridSize.y/2, -10);
         InitializeObstacles();
         _states = GenerateAllStates();
+
+        TilemapManager.Instance.StartTilemap(_states);
         
         _start = new State(0, 0);
         _end = new State(8, 8);

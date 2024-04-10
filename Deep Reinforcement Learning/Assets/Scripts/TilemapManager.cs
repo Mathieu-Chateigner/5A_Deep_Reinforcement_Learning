@@ -20,6 +20,14 @@ public class TilemapManager : MonoBehaviour
         Instance = this;
     }
     
+    public void StartTilemap(List<State> listState)
+    {
+        foreach (var state in listState)
+        {
+            tilemap.SetTile(new Vector3Int(state.X, state.Y, 0), GetQuestionMarkTile());
+        }
+    }
+    
     public void SetStartingValues(State start, State end)
     {
         _start = start;
@@ -73,5 +81,10 @@ public class TilemapManager : MonoBehaviour
     private Tile GetRewardTile()
     {
         return tileList.First(tile => tile.name.Equals("reward"));
+    }
+    
+    private Tile GetQuestionMarkTile()
+    {
+        return tileList.First(tile => tile.name.Equals("question_mark"));
     }
 }
