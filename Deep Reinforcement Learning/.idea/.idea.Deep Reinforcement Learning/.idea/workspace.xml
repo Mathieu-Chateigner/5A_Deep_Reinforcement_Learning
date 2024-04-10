@@ -1,7 +1,110 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="7b619f0b-2cc4-4302-aecc-a432249f4cf2" name="Changes" comment="" />
+    <list default="true" id="7b619f0b-2cc4-4302-aecc-a432249f4cf2" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.Deep Reinforcement Learning/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Deep Reinforcement Learning/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/arrow_down.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/arrow_down.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/arrow_left.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/arrow_left.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/arrow_right.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/arrow_right.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/arrow_up.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/arrow_up.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/blue2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/blue2.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/obstacle.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/obstacle.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/pink.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/pink.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/player.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/player.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/question_mark.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/question_mark.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/red.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/red.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/reward.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Images/reward.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/Arrow_Down.prefab" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/Arrow_Down.prefab.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/Arrow_Left.prefab" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/Arrow_Left.prefab.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/Arrow_Right.prefab" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/Arrow_Right.prefab.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/Arrow_Up.prefab" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/Arrow_Up.prefab.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/TestLeft.prefab" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/TestLeft.prefab.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/SampleScene.unity.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/DownWalk.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/DownWalk.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/GoodCrate2.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/GoodCrate2.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/Idle.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/Idle.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/LeftWalk.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/LeftWalk.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/Main Camera.controller" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/Main Camera.controller.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/Player.controller" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/Player.controller.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/RightWalk.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/RightWalk.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/UpWalk.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/UpWalk.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/crate.controller" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Animations/crate.controller.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Back.prefab" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Back.prefab.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/BlueX.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/BlueX.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/SokobanTiles.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/SokobanTiles/New Palette.prefab" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/SokobanTiles/New Palette.prefab.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Target.prefab" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/Target.prefab.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/crate.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/crate.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/crate.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/crate.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/green.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/green.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/green.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/green.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/icone-fermer-et-x-bleue.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/icone-fermer-et-x-bleue.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/orc_base.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/orc_base.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/wall.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/wall.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/wall128x128.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Sprites/wall128x128.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Palettes/Wall.prefab" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Palettes/Wall.prefab.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/arrow_down.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/arrow_down.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/arrow_left.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/arrow_left.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/arrow_right.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/arrow_right.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/arrow_up.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/arrow_up.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/obstacle.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/obstacle.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/player.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/player.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/question_mark.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/question_mark.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/reward.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Tilemaps/Tiles/reward.asset.meta" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -11,7 +114,9 @@
     <option name="stateVersion" value="1" />
   </component>
   <component name="ProjectId" id="2eonUkiAcBsKT3Qd0q56pH8LQmz" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -22,10 +127,27 @@
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
+    "node.js.selected.package.tslint": "(autodetect)",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
   <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
+    <configuration name="Start Unity" type="RunUnityExe" factoryName="Unity Executable">
+      <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\2022.3.23f1\Editor\Unity.exe" />
+      <option name="PROGRAM_PARAMETERS" value="-projectPath &quot;C:\Unity\5A_Deep_Reinforcement_Learning_Groupe_4\Deep Reinforcement Learning&quot; -debugCodeOptimization" />
+      <option name="WORKING_DIRECTORY" value="C:\Unity\5A_Deep_Reinforcement_Learning_Groupe_4\Deep Reinforcement Learning" />
+      <option name="PASS_PARENT_ENVS" value="1" />
+      <option name="USE_EXTERNAL_CONSOLE" value="0" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Unit Tests (batch mode)" type="RunUnityExe" factoryName="Unity Executable">
+      <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\2022.3.23f1\Editor\Unity.exe" />
+      <option name="PROGRAM_PARAMETERS" value="-runTests -batchmode -projectPath &quot;C:\Unity\5A_Deep_Reinforcement_Learning_Groupe_4\Deep Reinforcement Learning&quot; -testResults Logs/results.xml -testPlatform EditMode -debugCodeOptimization" />
+      <option name="WORKING_DIRECTORY" value="C:\Unity\5A_Deep_Reinforcement_Learning_Groupe_4\Deep Reinforcement Learning" />
+      <option name="PASS_PARENT_ENVS" value="1" />
+      <option name="USE_EXTERNAL_CONSOLE" value="0" />
+      <method v="2" />
+    </configuration>
     <configuration name="UnitTests (batch mode)" type="RunUnityExe" factoryName="Unity Executable">
       <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\2022.3.23f1\Editor\Unity.exe" />
       <option name="PROGRAM_PARAMETERS" value="-runTests -batchmode -projectPath &quot;C:\Users\matth\Documents\5A_Deep_Reinforcement_Learning_Groupe_4\Deep Reinforcement Learning&quot; -testResults Logs/results.xml -testPlatform EditMode -debugCodeOptimization" />
