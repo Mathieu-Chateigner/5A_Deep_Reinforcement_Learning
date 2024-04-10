@@ -207,7 +207,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 35
+  m_fontSize: 28.95
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -560,7 +560,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 35
+  m_fontSize: 28.95
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1260,6 +1260,9 @@ MonoBehaviour:
   camera: {fileID: 1631308050}
   buttonPolicyIteration: {fileID: 1319711778}
   buttonValueIteration: {fileID: 1276774303}
+  usePolicyIteration: 0
+  useValueIteration: 0
+  useMonteCarlo: 0
 --- !u!4 &1636797481
 Transform:
   m_ObjectHideFlags: 0
