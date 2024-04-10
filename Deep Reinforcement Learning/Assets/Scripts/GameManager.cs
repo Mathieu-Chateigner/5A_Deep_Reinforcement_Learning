@@ -10,13 +10,19 @@ public class GameManager : MonoBehaviour
     public Camera camera;
     public Button buttonPolicyIteration;
     public Button buttonValueIteration;
-    
+
+    public bool usePolicyIteration;
+    public bool useValueIteration;
+    public bool useMonteCarlo;
+
     private State _start;
     private State _end;
     private List<State> _obstacles;
     private Policy _policy;
-    private Dictionary<State, float> _stateValues; // Used by PolicyEvaluation
+    private Dictionary<State, float> _stateValues; // Used by PolicyIteration and ValueIteration
     private List<State> _states;
+    private Dictionary<State, float> returnsSum; // Used by MonteCarlo
+    private Dictionary<State, int> returnsCount; // Used by MonteCarlo
 
     private void Start()
     {
@@ -25,21 +31,36 @@ public class GameManager : MonoBehaviour
         _states = GenerateAllStates();
 
         TilemapManager.Instance.StartTilemap(_states);
-        
+
         _start = new State(0, 0);
         _end = new State(8, 8);
-        
+
         TilemapManager.Instance.SetStartingValues(_start, _end);
-        
+
         _policy = new Policy();
         _policy.InitializePolicy(_states, this);
 
         InitializeStateValues();
 
         PrintCoordinates();
+        PrintPolicy();
 
-        //PolicyIteration(_states, 0.9f); // Policy iteration
-        //ValueIteration(states, 0.9f); // Value iteration
+        /*if(usePolicyIteration)
+        {
+            PolicyIteration(states, 0.9f); // Policy iteration
+        }
+        else if(useValueIteration)
+        {
+            ValueIteration(states, 0.9f); // Value iteration
+        }
+        else if(useMonteCarlo)
+        {
+            stateValues = MonteCarloFirstVisitOnPolicy(states, 20);
+        }*/
+
+        PrintPossibleActions();
+        PrintStateValues();
+        PrintPolicy();
     }
 
     private void InitializeObstacles()
@@ -63,7 +84,7 @@ public class GameManager : MonoBehaviour
 
         UpdateTilemapObstacles();
     }
-    
+
     public void UpdateTilemap(Dictionary<State, Action> policy)
     {
         StartCoroutine(TilemapManager.Instance.UpdateTilemap(policy, () =>
@@ -194,28 +215,172 @@ public class GameManager : MonoBehaviour
                 {
                     var nextState = GetNextState(state, action);
 
-                    var reward = IsEnd(nextState) ? 0f : GetImmediateReward(state, action); // To fix values between 0 and 1
-                    var value = reward + (discountFactor * _stateValues[nextState]);
-                    if (!(value > maxValue)) continue;
-                    maxValue = value;
-                    bestAction = action;
+                    float reward = IsEnd(nextState) ? 0f : GetImmediateReward(state, action);
+                    float value = reward + (discountFactor * _stateValues[nextState]);
+                    if (value > maxValue)
+                    {
+                        maxValue = value;
+                        bestAction = action;
+                    }
                 }
-                
+
                 _stateValues[state] = maxValue;
 
                 // Update policy
                 _policy.UpdatePolicy(state, bestAction);
-                
+
                 delta = Mathf.Max(delta, Mathf.Abs(oldValue - maxValue));
             }
         } while (delta > theta);
         UpdateTilemap(_policy.GetPolicy());
     }
 
+    public Dictionary<State, float> MonteCarloFirstVisitOnPolicy(List<State> states, int numEpisode)
+    {
+        returnsSum = new Dictionary<State, float>();
+        returnsCount = new Dictionary<State, int>();
+
+        foreach (var state in states)
+        {
+            returnsSum[state] = 0.0f;
+            returnsCount[state] = 0;
+        }
+
+        for (int e = 0; e < numEpisode; e++)
+        {
+            // Generate using policy, an episode State0, Action0, Reward0, State1, Action1, Reward1, ..., StateT, ActionT, RewardT
+            // G = 0
+            // for timeStep t = T - 1 to t = 0 (of the episode e) do {
+            //      G  = G + RewardT+1
+            //      if StateT is not the sequence State0, State1, ..., StateT-1 then {
+            //          returnsSum[StateT] = returnsSum[StateT] + G
+            //          returnsCount[StateT] = returnsCount[StateT] + 1
+            //      }
+            // }
+
+            List<(State, Action, float)> episode = GenerateEpisode(); // Simulation
+
+            float G = 0;
+            HashSet<State> visitedStates = new HashSet<State>();
+
+            // Parcourir l'�pisode de la fin au d�but
+            for (int t = episode.Count - 1; t >= 0; t--)
+            {
+                G = 0.9f * G + episode[t].Item3; // R�compense � t
+
+                State stateT = episode[t].Item1;
+
+                // First-Visit : si l'�tat n'a pas �t� d�j� visit� dans cet �pisode
+                if (!visitedStates.Contains(stateT))
+                {
+                    returnsSum[stateT] += G;
+                    returnsCount[stateT] += 1;
+                    visitedStates.Add(stateT);
+                }
+            }
+
+            Dictionary<State, float> values = new Dictionary<State, float>();
+            foreach (State state in returnsSum.Keys)
+            {
+                if (IsEnd(state)) continue;
+                if (returnsCount[state] > 0)
+                {
+                    values[state] = returnsSum[state] / returnsCount[state];
+                }
+            }
+            UpdatePolicyBasedOnStateValues(states, values); // On policy
+        }
+
+        // Compute average
+        Dictionary<State, float> stateValues = new Dictionary<State, float>();
+        foreach (State state in returnsSum.Keys)
+        {
+            if (IsEnd(state)) continue;
+            if(returnsCount[state] > 0)
+            {
+                stateValues[state] = returnsSum[state] / returnsCount[state];
+            }
+        }
+        return stateValues;
+    }
+
+    private List<(State, Action, float)> GenerateEpisode()
+    {
+        List<(State, Action, float)> episode = new List<(State, Action, float)>();
+        State currentState = _start; // Commencez � l'�tat de d�part
+        HashSet<State> visitedStates = new HashSet<State>(); // Pour d�tecter les boucles
+
+        int step = 0;
+        while (!IsEnd(currentState))
+        {
+            Action action;
+            List<Action> validActions = GetValidActions(currentState);
+
+            if (Random.value < 0.9f) // Exploration avec une probabilit� epsilon
+            {
+                action = validActions[Random.Range(0, validActions.Count)];
+            }
+            else // Exploitation
+            {
+                action = _policy.GetAction(currentState);
+            }
+
+            //action = validActions[Random.Range(0, validActions.Count)];
+            //action = policy.GetAction(currentState); // Suit la politique
+
+            State nextState = GetNextState(currentState, action);
+            float reward = GetImmediateReward(currentState, action);
+
+            // Boucle d�tect�e ou �tat final impossible
+            if (step++ > 100)
+            {
+                episode.Add((currentState, default(Action), -1f)); // Echec
+                break;
+            }
+
+            episode.Add((currentState, action, reward));
+
+            currentState = nextState; // Mettez � jour l'�tat courant pour la prochaine it�ration
+
+            if (IsEnd(currentState))
+            {
+                episode.Add((currentState, default(Action), 1f));
+                break;
+            }
+        }
+
+        return episode;
+    }
+
+    void UpdatePolicyBasedOnStateValues(List<State> states, Dictionary<State, float> values)
+    {
+        foreach (State state in states)
+        {
+            if (!IsEnd(state))
+            {
+                List<Action> validActions = GetValidActions(state);
+                float maxValue = float.NegativeInfinity;
+                Action bestAction = Action.Up;
+
+                foreach (Action action in validActions)
+                {
+                    State nextState = GetNextState(state, action);
+                    float value = values.ContainsKey(nextState) ? values[nextState] : 0f;
+                    if (value > maxValue)
+                    {
+                        maxValue = value;
+                        bestAction = action;
+                    }
+                }
+                _policy.UpdatePolicy(state, bestAction);
+            }
+        }
+    }
+
     public float GetImmediateReward(State currentState, Action action)
     {
         var nextState = GetNextState(currentState, action);
-        
+
         if (nextState.Equals(_end))
         {
             return 1.0f;
@@ -223,7 +388,7 @@ public class GameManager : MonoBehaviour
 
         if (_obstacles.Contains(nextState))
         {
-            return -1.0f;
+            return 0.0f;
         }
 
         return 0.0f;
@@ -251,7 +416,12 @@ public class GameManager : MonoBehaviour
                 break;
         }
 
-        return _obstacles.Contains(nextState) ? state : nextState;
+        /*if (_obstacles.Contains(nextState))
+        {
+            return state;
+        }*/
+
+        return nextState;
     }
 
     public List<Action> GetValidActions(State state)
@@ -264,6 +434,22 @@ public class GameManager : MonoBehaviour
         if (state.X > 0) validActions.Add(Action.Left); // Peut aller vers la gauche
 
         // Check aussi les obstacles
+        if (_obstacles.Contains(GetNextState(state, Action.Up)))
+        {
+            validActions.Remove(Action.Up);
+        }
+        if (_obstacles.Contains(GetNextState(state, Action.Right)))
+        {
+            validActions.Remove(Action.Right);
+        }
+        if (_obstacles.Contains(GetNextState(state, Action.Down)))
+        {
+            validActions.Remove(Action.Down);
+        }
+        if (_obstacles.Contains(GetNextState(state, Action.Left)))
+        {
+            validActions.Remove(Action.Left);
+        }
 
         return validActions;
     }
@@ -330,6 +516,27 @@ public class GameManager : MonoBehaviour
             gridCoordinates += line + "\n";
         }
         Debug.Log(gridCoordinates);
+    }
+
+    private void PrintPossibleActions()
+    {
+        string grid = "Grid Possible Actions:\n";
+        for (int y = gridSize.y - 1; y >= 0; y--)
+        {
+            string line = "";
+            for (int x = 0; x < gridSize.x; x++)
+            {
+                State state = new State(x, y);
+                int count = GetValidActions(state).Count;
+                if (_obstacles.Contains(state))
+                {
+                    count = 0;
+                }
+                line += count + "\t";
+            }
+            grid += line + "\n";
+        }
+        Debug.Log(grid);
     }
 
     public State GetEnd()
