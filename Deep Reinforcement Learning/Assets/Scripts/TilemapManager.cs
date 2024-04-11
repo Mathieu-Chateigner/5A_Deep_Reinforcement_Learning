@@ -19,49 +19,6 @@ public class TilemapManager : MonoBehaviour
     {
         Instance = this;
     }
-    
-    public void StartTilemap(List<State> listState)
-    {
-        foreach (var state in listState)
-        {
-            tilemap.SetTile(new Vector3Int(state.X, state.Y, 0), GetQuestionMarkTile());
-        }
-    }
-    
-    // deprecated
-    public void SetStartingValues(State start, State end)
-    {
-        _start = start;
-        _end = end;
-    }
-
-    // deprecated
-    public IEnumerator UpdateTilemap(Dictionary<State, Action> policy, System.Action onFinish)
-    {
-        foreach (var (state, action) in policy)
-        {
-            tilemap.SetTile(new Vector3Int(state.X, state.Y, 0), GetTileFromAction(action));
-            
-            if (state.Equals(_start))
-                tilemap.SetTile(new Vector3Int(state.X, state.Y, 0), GetPlayerTile());
-            
-            if (state.Equals(_end))
-                tilemap.SetTile(new Vector3Int(state.X, state.Y, 0), GetRewardTile());
-            
-            yield return new WaitForSeconds(0.1f);
-        }
-        
-        onFinish?.Invoke();
-    }
-
-    public IEnumerator UpdateTilemapObstacles(List<State> listObstacles)
-    {
-        foreach (var obstacle in listObstacles)
-        {
-            tilemap.SetTile(new Vector3Int(obstacle.X, obstacle.Y, 0), tileList.First(tile => tile.name.Equals("obstacle")));
-            yield return new WaitForSeconds(0.1f);
-        }
-    }
 
     private Tile GetPlayerTile()
     {

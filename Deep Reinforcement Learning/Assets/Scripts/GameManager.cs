@@ -28,17 +28,13 @@ public class GameManager : MonoBehaviour
         //InitializeObstacles();
         //_states = GenerateAllStates();
 
-        //TilemapManager.Instance.StartTilemap(_states);
-
         _start = new State(1, 1);
         _end = new State(5, 5);
-
-        //TilemapManager.Instance.SetStartingValues(_start, _end);
 
         //PolicyIteration(_states, 0.9f); // Policy iteration
         //ValueIteration(states, 0.9f); // Value iteration
 
-        //Map currentMap = GenerateSokobanMap();
+        //currentMap = GenerateSokobanMap();
         //_states = GenerateAllStates(Game.Sokoban, currentMap);
 
         currentMap = GenerateGridWorldMap();
@@ -51,7 +47,6 @@ public class GameManager : MonoBehaviour
 
         _policy = new Policy();
         _policy.InitializePolicy(_states, this);
-        //UpdateTilemap(_policy.GetPolicy());
 
         InitializeStateValues();
 
@@ -73,20 +68,6 @@ public class GameManager : MonoBehaviour
         MonteCarloFirstVisitOnPolicy(numEpisode);
         TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
     }
-
-    /*public void UpdateTilemap(Dictionary<State, Action> policy)
-    {
-        StartCoroutine(TilemapManager.Instance.UpdateTilemap(policy, () =>
-        {
-            buttonPolicyIteration.interactable = true;
-            buttonValueIteration.interactable = true;
-        }));
-    }
-
-    public void UpdateTilemapObstacles()
-    {
-        StartCoroutine(TilemapManager.Instance.UpdateTilemapObstacles(_obstacles));
-    }*/
 
     private List<State> GenerateAllStates(Game game, Map map)
     {
@@ -177,9 +158,39 @@ public class GameManager : MonoBehaviour
         _stateValues = new Dictionary<State, float>();
         foreach (var state in _states)
         {
-            // Default 0, Final state 1
-            _stateValues[state] = state.Equals(currentMap.endState) ? 1f : 0f; // to review (sokoban map has no defined endstate)
+            if(state.game == Game.GridWorld)
+            {
+                _stateValues[state] = state.Equals(currentMap.endState) ? 1f : 0f;
+            }
+            else if(state.game == Game.Sokoban)
+            {
+                // Ratio de caisses sur les cibles
+                float score = CalculateScore(state, currentMap.targets);
+                _stateValues[state] = score;
+            }
         }
+    }
+
+    // Ratio of crates on targets
+    private float CalculateScore(State state, List<Vector2Int> targets)
+    {
+        if (state.crates == null || state.crates.Count == 0)
+        {
+            return 0f; // Pas de caisse
+        }
+
+        // Compte le nombre de caisse sur une cible
+        int cratesOnTarget = 0;
+        foreach (var crate in state.crates)
+        {
+            if (targets.Contains(crate))
+            {
+                cratesOnTarget++;
+            }
+        }
+
+        // Ratio nombre de caisses
+        return (float)cratesOnTarget / state.crates.Count;
     }
 
     public void PolicyIteration(float discountFactor)
@@ -658,7 +669,6 @@ public class GameManager : MonoBehaviour
         State startState = new State(spawnPosition.x, spawnPosition.y);
         State endState = new State(5, 5);
 
-        // Initialisation de la map
         return new Map(dimensions, walls, targets, startState, endState);
     }
 
@@ -695,7 +705,6 @@ public class GameManager : MonoBehaviour
         State startState = new State(spawnPosition, crates);
         State endState = null; // Dans Sokoban, l'état de fin est généralement implicite basé sur les objectifs
 
-        // Initialisation de la map
         return new Map(dimensions, walls, targets, startState, endState);
     }
 }
