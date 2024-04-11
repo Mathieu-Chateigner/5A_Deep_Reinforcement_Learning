@@ -28,12 +28,14 @@ public class TilemapManager : MonoBehaviour
         }
     }
     
+    // deprecated
     public void SetStartingValues(State start, State end)
     {
         _start = start;
         _end = end;
     }
 
+    // deprecated
     public IEnumerator UpdateTilemap(Dictionary<State, Action> policy, System.Action onFinish)
     {
         foreach (var (state, action) in policy)

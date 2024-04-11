@@ -68,6 +68,12 @@ public class GameManager : MonoBehaviour
         TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
     }
 
+    public void MonteCarlo(int numEpisode)
+    {
+        MonteCarloFirstVisitOnPolicy(numEpisode);
+        TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
+    }
+
     /*public void UpdateTilemap(Dictionary<State, Action> policy)
     {
         StartCoroutine(TilemapManager.Instance.UpdateTilemap(policy, () =>
@@ -171,8 +177,8 @@ public class GameManager : MonoBehaviour
         _stateValues = new Dictionary<State, float>();
         foreach (var state in _states)
         {
-            // Default 0,
-            _stateValues[state] = state.Equals(_end) ? 1f : 0f;
+            // Default 0, Final state 1
+            _stateValues[state] = state.Equals(currentMap.endState) ? 1f : 0f; // to review (sokoban map has no defined endstate)
         }
     }
 
@@ -290,12 +296,12 @@ public class GameManager : MonoBehaviour
         TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
     }
 
-    public Dictionary<State, float> MonteCarloFirstVisitOnPolicy(List<State> states, int numEpisode)
+    public Dictionary<State, float> MonteCarloFirstVisitOnPolicy(int numEpisode)
     {
         returnsSum = new Dictionary<State, float>();
         returnsCount = new Dictionary<State, int>();
 
-        foreach (var state in states)
+        foreach (var state in _states)
         {
             returnsSum[state] = 0.0f;
             returnsCount[state] = 0;
@@ -343,7 +349,7 @@ public class GameManager : MonoBehaviour
                     values[state] = returnsSum[state] / returnsCount[state];
                 }
             }
-            UpdatePolicyBasedOnStateValues(states, values); // On policy
+            UpdatePolicyBasedOnStateValues(_states, values); // On policy
         }
 
         // Compute average
@@ -362,7 +368,7 @@ public class GameManager : MonoBehaviour
     private List<(State, Action, float)> GenerateEpisode()
     {
         List<(State, Action, float)> episode = new List<(State, Action, float)>();
-        State currentState = start; // Commencez � l'�tat de d�part
+        State currentState = currentMap.startState; // Commencez � l'�tat de d�part
         HashSet<State> visitedStates = new HashSet<State>(); // Pour d�tecter les boucles
 
         int step = 0;
@@ -377,7 +383,7 @@ public class GameManager : MonoBehaviour
             }
             else // Exploitation
             {
-                action = policy.GetAction(currentState);
+                action = _policy.GetAction(currentState);
             }
 
             //action = validActions[Random.Range(0, validActions.Count)];
@@ -427,7 +433,7 @@ public class GameManager : MonoBehaviour
                         bestAction = action;
                     }
                 }
-                policy.UpdatePolicy(state, bestAction);
+                _policy.UpdatePolicy(state, bestAction);
             }
         }
     }
@@ -495,42 +501,46 @@ public class GameManager : MonoBehaviour
     {
         var validActions = new List<Action>();
 
-        if(state.game == Game.GridWorld)
+        if (state.game == Game.GridWorld)
         {
             if (state.Y < gridSize.y - 1) validActions.Add(Action.Up); // Peut aller vers le haut
             if (state.X < gridSize.x - 1) validActions.Add(Action.Right); // Peut aller vers la droite
             if (state.Y > 0) validActions.Add(Action.Down); // Peut aller vers le bas
             if (state.X > 0) validActions.Add(Action.Left); // Peut aller vers la gauche
+
+            // Check aussi les obstacles
+            Vector2Int playerPosition = new Vector2Int(state.X, state.Y);
+            State upNextState = GetNextState(state, Action.Up);
+            State rightNextState = GetNextState(state, Action.Right);
+            State downNextState = GetNextState(state, Action.Down);
+            State leftNextState = GetNextState(state, Action.Left);
+            if (currentMap.obstacles.Contains(new Vector2Int(upNextState.X, upNextState.Y)))
+            {
+                validActions.Remove(Action.Up);
+            }
+            if (currentMap.obstacles.Contains(new Vector2Int(rightNextState.X, rightNextState.Y)))
+            {
+                validActions.Remove(Action.Right);
+            }
+            if (currentMap.obstacles.Contains(new Vector2Int(downNextState.X, downNextState.Y)))
+            {
+                validActions.Remove(Action.Down);
+            }
+            if (currentMap.obstacles.Contains(new Vector2Int(leftNextState.X, leftNextState.Y)))
+            {
+                validActions.Remove(Action.Left);
+            }
         }
-        else if(state.game == Game.Sokoban)
+        else if (state.game == Game.Sokoban)
         {
             // todo
         }
-
-        // Check aussi les obstacles
-        if (obstacles.Contains(GetNextState(state, Action.Up)))
-        {
-            validActions.Remove(Action.Up);
-        }
-        if (obstacles.Contains(GetNextState(state, Action.Right)))
-        {
-            validActions.Remove(Action.Right);
-        }
-        if (obstacles.Contains(GetNextState(state, Action.Down)))
-        {
-            validActions.Remove(Action.Down);
-        }
-        if (obstacles.Contains(GetNextState(state, Action.Left)))
-        {
-            validActions.Remove(Action.Left);
-        }
-
         return validActions;
     }
 
     private bool IsEnd(State state)
     {
-        return state.Equals(_end);
+        return state.Equals(_end); // to review (sokoban map has no defined endstate)
     }
 
     private void PrintPolicy()
@@ -602,7 +612,7 @@ public class GameManager : MonoBehaviour
             {
                 State state = new State(x, y);
                 int count = GetValidActions(state).Count;
-                if (obstacles.Contains(state))
+                if (_obstacles.Contains(state))
                 {
                     count = 0;
                 }
@@ -631,7 +641,8 @@ public class GameManager : MonoBehaviour
             new Vector2Int(0,6), new Vector2Int(1,6), new Vector2Int(2,6),
             new Vector2Int(3,6), new Vector2Int(4,6), new Vector2Int(5,6),
             new Vector2Int(6,6), new Vector2Int(6,1), new Vector2Int(6,2),
-            new Vector2Int(6,3), new Vector2Int(6,4), new Vector2Int(6,5)
+            new Vector2Int(6,3), new Vector2Int(6,4), new Vector2Int(6,5),
+            new Vector2Int(4,4), new Vector2Int(5,4), new Vector2Int(4,3)
         };
 
         List<Vector2Int> crates = new List<Vector2Int> {};
