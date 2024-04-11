@@ -21,13 +21,15 @@ public class GameManager : MonoBehaviour
 
     private Dictionary<State, float> returnsSum;
     private new Dictionary<State, int> returnsCount;
+    private MapManager mapManager;
 
     private void Start()
     {
+        mapManager = new MapManager();
         //InitializeObstacles();
         //_states = GenerateAllStates();
 
-        _start = new State(1, 1);
+        //_start = new State(1, 1);
         _end = new State(5, 5);
 
         //PolicyIteration(_states, 0.9f); // Policy iteration
@@ -36,8 +38,9 @@ public class GameManager : MonoBehaviour
         //currentMap = GenerateSokobanMap();
         //_states = GenerateAllStates(Game.Sokoban, currentMap);
 
-        currentMap = GenerateGridWorldMap();
-        _states = GenerateAllStates(Game.GridWorld, currentMap);
+        Game game = Game.GridWorld;
+        currentMap = mapManager.GetMap(game, 0);
+        _states = GenerateAllStates(game, currentMap);
         currentState = currentMap.startState;
 
         Debug.Log("Total states count : " + _states.Count);

@@ -213,7 +213,7 @@ MonoBehaviour:
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 20
+          m_IntArgument: 400
           m_FloatArgument: 0.9
           m_StringArgument: 
           m_BoolArgument: 0
@@ -1612,8 +1612,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gridSize: {x: 10, y: 10}
   camera: {fileID: 1631308050}
-  buttonPolicyIteration: {fileID: 1319711778}
-  buttonValueIteration: {fileID: 1276774303}
+  listButtons: []
 --- !u!4 &1636797481
 Transform:
   m_ObjectHideFlags: 0
