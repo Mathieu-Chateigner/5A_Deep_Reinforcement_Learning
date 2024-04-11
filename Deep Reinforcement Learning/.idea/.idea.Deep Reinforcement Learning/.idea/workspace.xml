@@ -6,11 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="7b619f0b-2cc4-4302-aecc-a432249f4cf2" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Deep Reinforcement Learning/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Deep Reinforcement Learning/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Images/Sokoban/Animations/Idle.anim" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Images/Sokoban/Animations/Idle.anim" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Images/Sokoban/orc_base.png.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Images/Sokoban/orc_base.png.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/Sokoban.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Sokoban.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ProjectSettings/DynamicsManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/DynamicsManager.asset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scripts/PlayerManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scripts/PlayerManager.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -112,7 +109,7 @@
       <option name="presentableId" value="Default" />
       <updated>1712579818361</updated>
       <workItem from="1712579830399" duration="5670000" />
-      <workItem from="1712834040821" duration="2476000" />
+      <workItem from="1712834040821" duration="3205000" />
     </task>
     <servers />
   </component>

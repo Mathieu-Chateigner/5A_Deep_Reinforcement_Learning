@@ -5,13 +5,20 @@ using UnityEngine;
 public class PlayerManager : MonoBehaviour
 {
     public Rigidbody2D player;
+    public Camera camera;
     public LayerMask wallsLayer;
     public LayerMask boxesLayer;
     public LayerMask rewardLayer;
 
     private bool _canMove;
     private int _reward;
-    
+
+    private void Start()
+    {
+        var playerPos = player.position;
+        camera.transform.position = new Vector3(playerPos.x, playerPos.y, -10);
+    }
+
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.RightArrow))
@@ -73,7 +80,7 @@ public class PlayerManager : MonoBehaviour
                 var boxNextPos = playerNextPos + new Vector2(x,y);
                 var tile = SokobanManager.Instance.tilemapBoxes.GetTile(
                     new Vector3Int(Mathf.RoundToInt(playerNextPos.x-0.5f), Mathf.RoundToInt(playerNextPos.y-0.5f), 0));
-                if (Physics2D.OverlapCircle(boxNextPos, .2f, wallsLayer))
+                if (Physics2D.OverlapCircle(boxNextPos, .2f, wallsLayer) || Physics2D.OverlapCircle(boxNextPos, .2f, boxesLayer))
                 {
                     _canMove = false;
                 }
