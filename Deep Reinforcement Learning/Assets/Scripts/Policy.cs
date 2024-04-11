@@ -25,7 +25,6 @@ public class Policy
             var action = validActions[index];
             _policy[state] = action;  // Choix aléatoire d'une action valide
         }
-        _gm.UpdateTilemap(_policy);
     }
 
     public Action GetAction(State state)
