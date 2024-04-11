@@ -12,6 +12,7 @@ public class MapManager : MonoBehaviour
         gridWorldMaps = new List<Map>();
         sokobanMaps = new List<Map>();
         gridWorldMaps.Add(GenerateGridWorldMap1());
+        gridWorldMaps.Add(GenerateGridWorldMap2());
         sokobanMaps.Add(GenerateSokobanMap1());
     }
 
@@ -56,6 +57,32 @@ public class MapManager : MonoBehaviour
         // Création de l'état initial et final
         State startState = new State(spawnPosition.x, spawnPosition.y);
         State endState = new State(5, 5);
+
+        return new Map(dimensions, walls, targets, startState, endState);
+    }
+
+    public Map GenerateGridWorldMap2()
+    {
+        Vector2Int dimensions = new Vector2Int(10, 10);
+
+        List<Vector2Int> walls = new List<Vector2Int>
+        {
+            new Vector2Int(2,2), new Vector2Int(3,2), new Vector2Int(2,1),
+            new Vector2Int(4,4), new Vector2Int(5,4), new Vector2Int(4,3)
+        };
+
+        List<Vector2Int> crates = new List<Vector2Int> { };
+
+        List<Vector2Int> targets = new List<Vector2Int>
+        {
+            new Vector2Int(1, 9)
+        };
+
+        Vector2Int spawnPosition = new Vector2Int(6, 0);
+
+        // Création de l'état initial et final
+        State startState = new State(spawnPosition.x, spawnPosition.y);
+        State endState = new State(1, 9);
 
         return new Map(dimensions, walls, targets, startState, endState);
     }

@@ -30,7 +30,7 @@ public class GameManager : MonoBehaviour
         //_states = GenerateAllStates();
 
         //_start = new State(1, 1);
-        _end = new State(5, 5);
+       
 
         //PolicyIteration(_states, 0.9f); // Policy iteration
         //ValueIteration(states, 0.9f); // Value iteration
@@ -40,6 +40,7 @@ public class GameManager : MonoBehaviour
 
         Game game = Game.GridWorld;
         currentMap = mapManager.GetMap(game, 0);
+        _end = currentMap.endState; // ONLY FOR GRID WORLD (deprecated)
         _states = GenerateAllStates(game, currentMap);
         currentState = currentMap.startState;
 
