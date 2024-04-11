@@ -11,108 +11,146 @@ public class GameManager : MonoBehaviour
     public Button buttonPolicyIteration;
     public Button buttonValueIteration;
 
-    public bool usePolicyIteration;
-    public bool useValueIteration;
-    public bool useMonteCarlo;
-
-    private State _start;
-    private State _end;
-    private List<State> _obstacles;
+    private State _start; // deprecated
+    private State _end; // deprecated
+    private List<State> _obstacles; // deprecated
     private Policy _policy;
-    private Dictionary<State, float> _stateValues; // Used by PolicyIteration and ValueIteration
+    private Dictionary<State, float> _stateValues; // Used by PolicyEvaluation and ValueIteration
     private List<State> _states;
-    private Dictionary<State, float> returnsSum; // Used by MonteCarlo
-    private Dictionary<State, int> returnsCount; // Used by MonteCarlo
+    private Map currentMap;
+    private State currentState;
+
+    private Dictionary<State, float> returnsSum;
+    private new Dictionary<State, int> returnsCount;
 
     private void Start()
     {
-        camera.transform.position = new Vector3(gridSize.x/2, gridSize.y/2, -10);
-        InitializeObstacles();
-        _states = GenerateAllStates();
+        //InitializeObstacles();
+        //_states = GenerateAllStates();
 
-        TilemapManager.Instance.StartTilemap(_states);
+        _start = new State(1, 1);
+        _end = new State(5, 5);
 
-        _start = new State(0, 0);
-        _end = new State(8, 8);
+        //PolicyIteration(_states, 0.9f); // Policy iteration
+        //ValueIteration(states, 0.9f); // Value iteration
 
-        TilemapManager.Instance.SetStartingValues(_start, _end);
+        //currentMap = GenerateSokobanMap();
+        //_states = GenerateAllStates(Game.Sokoban, currentMap);
+
+        currentMap = GenerateGridWorldMap();
+        _states = GenerateAllStates(Game.GridWorld, currentMap);
+        currentState = currentMap.startState;
+
+        Debug.Log("Total states count : " + _states.Count);
+
+        camera.transform.position = new Vector3(currentMap.size.x / 2, currentMap.size.y / 2, -10);
 
         _policy = new Policy();
         _policy.InitializePolicy(_states, this);
 
         InitializeStateValues();
 
-        PrintCoordinates();
+        //PrintCoordinates();
+
         PrintPolicy();
-
-        /*if(usePolicyIteration)
-        {
-            PolicyIteration(states, 0.9f); // Policy iteration
-        }
-        else if(useValueIteration)
-        {
-            ValueIteration(states, 0.9f); // Value iteration
-        }
-        else if(useMonteCarlo)
-        {
-            stateValues = MonteCarloFirstVisitOnPolicy(states, 20);
-        }*/
-
-        PrintPossibleActions();
-        PrintStateValues();
-        PrintPolicy();
+        TilemapManager.Instance.Display(currentMap, currentMap.startState, _policy); // Affiche la map et le state
     }
 
-    private void InitializeObstacles()
+    public void playPolicy()
     {
-        _obstacles = new List<State>
-        {
-            // On ajoute nos obstacles i�i
-            //new(3, 2),
-            new(2, 2),
-            new(4, 2),
-            new(2, 3),
-            new(4, 3),
-            new(2, 2),
-            new(5, 8),
-            new(7, 6),
-            new(9, 9),
-            new(1, 7),
-            new(9, 3),
-            //new State(4, 0)
-        };
-
-        UpdateTilemapObstacles();
+        Debug.Log("Play current policy");
+        currentState = GetNextState(currentState, _policy.GetAction(currentState));
+        TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
     }
 
-    public void UpdateTilemap(Dictionary<State, Action> policy)
+    public void MonteCarlo(int numEpisode)
     {
-        StartCoroutine(TilemapManager.Instance.UpdateTilemap(policy, () =>
-        {
-            buttonPolicyIteration.interactable = true;
-            buttonValueIteration.interactable = true;
-        }));
+        MonteCarloFirstVisitOnPolicy(numEpisode);
+        TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
     }
 
-    public void UpdateTilemapObstacles()
-    {
-        StartCoroutine(TilemapManager.Instance.UpdateTilemapObstacles(_obstacles));
-    }
-
-    private List<State> GenerateAllStates()
+    private List<State> GenerateAllStates(Game game, Map map)
     {
         var states = new List<State>();
-        for (var x = 0; x < gridSize.x; x++)
+
+        // GridWorld
+        if (game == Game.GridWorld)
         {
-            for (var y = 0; y < gridSize.y; y++)
+            for (int x = 0; x < map.size.x; x++)
             {
-                var newState = new State(x, y);
-                if (_obstacles.Contains(newState)) continue;
-                states.Add(newState);
-                //tilemapGridWorld.SetTile(new Vector3Int(x, y, 0), tileList.First(tile => tile.name.Equals("question_mark")));
+                for (int y = 0; y < map.size.y; y++)
+                {
+                    Vector2Int position = new Vector2Int(x, y);
+                    if (!map.obstacles.Contains(position))
+                    {
+                        states.Add(new State(x, y));
+                    }
+                }
             }
         }
+        // Sokoban
+        else if (game == Game.Sokoban)
+        {
+            var allCrateCombinations = GetAllCombinations(map);
+            foreach (var crateCombination in allCrateCombinations)
+            {
+                for (var x = 0; x < map.size.x; x++)
+                {
+                    for (var y = 0; y < map.size.y; y++)
+                    {
+                        Vector2Int playerPosition = new Vector2Int(x, y);
+                        if (!map.obstacles.Contains(playerPosition) && !crateCombination.Contains(playerPosition))
+                        {
+                            states.Add(new State(playerPosition, crateCombination.ToList()));
+                        }
+                    }
+                }
+            }
+        }
+
         return states;
+    }
+
+    private HashSet<HashSet<Vector2Int>> GetAllCombinations(Map map)
+    {
+        List<Vector2Int> possiblePositions = new List<Vector2Int>();
+        // Générer une liste de toutes les positions possibles pour les caisses,
+        // en excluant les positions d'obstacles.
+        for (int x = 0; x < map.size.x; x++)
+        {
+            for (int y = 0; y < map.size.y; y++)
+            {
+                Vector2Int pos = new Vector2Int(x, y);
+                if (!map.obstacles.Contains(pos))
+                {
+                    possiblePositions.Add(pos);
+                }
+            }
+        }
+
+        var allCombinations = new HashSet<HashSet<Vector2Int>>();
+
+        GetCombinationsRecursive(possiblePositions, new List<Vector2Int>(), map.startState.crates.Count, 0, allCombinations);
+
+        return allCombinations;
+    }
+
+    // Méthode récursive pour générer toutes les combinaisons possibles de positions des caisses.
+    private void GetCombinationsRecursive(List<Vector2Int> possiblePositions, List<Vector2Int> currentCombination, int cratesLeft, int startPosition, HashSet<HashSet<Vector2Int>> allCombinations)
+    {
+        if (cratesLeft == 0)
+        {
+            // Si aucune caisse n'est laissée, ajoutez la combinaison actuelle à l'ensemble de toutes les combinaisons.
+            allCombinations.Add(new HashSet<Vector2Int>(currentCombination));
+            return;
+        }
+
+        for (int i = startPosition; i <= possiblePositions.Count - cratesLeft; i++)
+        {
+            currentCombination.Add(possiblePositions[i]);
+            GetCombinationsRecursive(possiblePositions, currentCombination, cratesLeft - 1, i + 1, allCombinations);
+            currentCombination.RemoveAt(currentCombination.Count - 1); // Retirer le dernier élément pour essayer la prochaine combinaison
+        }
     }
 
     private void InitializeStateValues()
@@ -120,9 +158,39 @@ public class GameManager : MonoBehaviour
         _stateValues = new Dictionary<State, float>();
         foreach (var state in _states)
         {
-            // Tous les �tats ont une valeur par d�faut de 0, sauf l'�tat final qui a une valeur de 1
-            _stateValues[state] = state.Equals(_end) ? 1f : 0f;
+            if(state.game == Game.GridWorld)
+            {
+                _stateValues[state] = state.Equals(currentMap.endState) ? 1f : 0f;
+            }
+            else if(state.game == Game.Sokoban)
+            {
+                // Ratio de caisses sur les cibles
+                float score = CalculateScore(state, currentMap.targets);
+                _stateValues[state] = score;
+            }
         }
+    }
+
+    // Ratio of crates on targets
+    private float CalculateScore(State state, List<Vector2Int> targets)
+    {
+        if (state.crates == null || state.crates.Count == 0)
+        {
+            return 0f; // Pas de caisse
+        }
+
+        // Compte le nombre de caisse sur une cible
+        int cratesOnTarget = 0;
+        foreach (var crate in state.crates)
+        {
+            if (targets.Contains(crate))
+            {
+                cratesOnTarget++;
+            }
+        }
+
+        // Ratio nombre de caisses
+        return (float)cratesOnTarget / state.crates.Count;
     }
 
     public void PolicyIteration(float discountFactor)
@@ -135,7 +203,8 @@ public class GameManager : MonoBehaviour
             policyStable = PolicyImprovement();
         } while (!policyStable);
 
-        UpdateTilemap(_policy.GetPolicy());
+        PrintPolicy();
+        TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
     }
 
     private void PolicyEvaluation(float discountFactor)
@@ -232,15 +301,18 @@ public class GameManager : MonoBehaviour
                 delta = Mathf.Max(delta, Mathf.Abs(oldValue - maxValue));
             }
         } while (delta > theta);
-        UpdateTilemap(_policy.GetPolicy());
+
+
+        PrintPolicy();
+        TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
     }
 
-    public Dictionary<State, float> MonteCarloFirstVisitOnPolicy(List<State> states, int numEpisode)
+    public Dictionary<State, float> MonteCarloFirstVisitOnPolicy(int numEpisode)
     {
         returnsSum = new Dictionary<State, float>();
         returnsCount = new Dictionary<State, int>();
 
-        foreach (var state in states)
+        foreach (var state in _states)
         {
             returnsSum[state] = 0.0f;
             returnsCount[state] = 0;
@@ -288,7 +360,7 @@ public class GameManager : MonoBehaviour
                     values[state] = returnsSum[state] / returnsCount[state];
                 }
             }
-            UpdatePolicyBasedOnStateValues(states, values); // On policy
+            UpdatePolicyBasedOnStateValues(_states, values); // On policy
         }
 
         // Compute average
@@ -307,7 +379,7 @@ public class GameManager : MonoBehaviour
     private List<(State, Action, float)> GenerateEpisode()
     {
         List<(State, Action, float)> episode = new List<(State, Action, float)>();
-        State currentState = _start; // Commencez � l'�tat de d�part
+        State currentState = currentMap.startState; // Commencez � l'�tat de d�part
         HashSet<State> visitedStates = new HashSet<State>(); // Pour d�tecter les boucles
 
         int step = 0;
@@ -381,91 +453,114 @@ public class GameManager : MonoBehaviour
     {
         var nextState = GetNextState(currentState, action);
 
-        if (nextState.Equals(_end))
+        if(currentState.game == Game.GridWorld)
         {
-            return 1.0f;
-        }
+            if (nextState.Equals(_end))
+            {
+                return 1.0f;
+            }
 
-        if (_obstacles.Contains(nextState))
-        {
+            Vector2Int playerPosition = new Vector2Int(nextState.X, nextState.Y);
+            if (currentMap.obstacles.Contains(playerPosition))
+            {
+                return 0.0f;
+            }
             return 0.0f;
         }
-
+        else if (currentState.game == Game.Sokoban)
+        {
+            // todo
+        }
         return 0.0f;
     }
 
     private State GetNextState(State state, Action action)
     {
-        var nextState = new State(state.X, state.Y);
-
-        switch (action)
+        if(state.game == Game.GridWorld)
         {
-            case Action.Up:
-                nextState.Y = nextState.Y + 1;
-                break;
-            case Action.Right:
-                nextState.X = nextState.X + 1;
-                break;
-            case Action.Down:
-                nextState.Y = nextState.Y - 1;
-                break;
-            case Action.Left:
-                nextState.X = nextState.X - 1;
-                break;
-            default:
-                break;
+            State nextState = new State(state.X, state.Y);
+
+            switch (action)
+            {
+                case Action.Up:
+                    nextState.Y = nextState.Y + 1;
+                    break;
+                case Action.Right:
+                    nextState.X = nextState.X + 1;
+                    break;
+                case Action.Down:
+                    nextState.Y = nextState.Y - 1;
+                    break;
+                case Action.Left:
+                    nextState.X = nextState.X - 1;
+                    break;
+                default:
+                    break;
+            }
+
+            Vector2Int playerPosition = new Vector2Int(nextState.X, nextState.Y);
+            return currentMap.obstacles.Contains(playerPosition) ? state : nextState;
         }
-
-        /*if (_obstacles.Contains(nextState))
-        {
-            return state;
-        }*/
-
-        return nextState;
+       else if(state.game == Game.Sokoban)
+       {
+            // todo
+       }
+        return state;
     }
 
     public List<Action> GetValidActions(State state)
     {
         var validActions = new List<Action>();
 
-        if (state.Y < gridSize.y - 1) validActions.Add(Action.Up); // Peut aller vers le haut
-        if (state.X < gridSize.x - 1) validActions.Add(Action.Right); // Peut aller vers la droite
-        if (state.Y > 0) validActions.Add(Action.Down); // Peut aller vers le bas
-        if (state.X > 0) validActions.Add(Action.Left); // Peut aller vers la gauche
+        if (state.game == Game.GridWorld)
+        {
+            if (state.Y < gridSize.y - 1) validActions.Add(Action.Up); // Peut aller vers le haut
+            if (state.X < gridSize.x - 1) validActions.Add(Action.Right); // Peut aller vers la droite
+            if (state.Y > 0) validActions.Add(Action.Down); // Peut aller vers le bas
+            if (state.X > 0) validActions.Add(Action.Left); // Peut aller vers la gauche
 
-        // Check aussi les obstacles
-        if (_obstacles.Contains(GetNextState(state, Action.Up)))
-        {
-            validActions.Remove(Action.Up);
+            // Check aussi les obstacles
+            Vector2Int playerPosition = new Vector2Int(state.X, state.Y);
+            State upNextState = GetNextState(state, Action.Up);
+            State rightNextState = GetNextState(state, Action.Right);
+            State downNextState = GetNextState(state, Action.Down);
+            State leftNextState = GetNextState(state, Action.Left);
+            if (currentMap.obstacles.Contains(new Vector2Int(upNextState.X, upNextState.Y)))
+            {
+                validActions.Remove(Action.Up);
+            }
+            if (currentMap.obstacles.Contains(new Vector2Int(rightNextState.X, rightNextState.Y)))
+            {
+                validActions.Remove(Action.Right);
+            }
+            if (currentMap.obstacles.Contains(new Vector2Int(downNextState.X, downNextState.Y)))
+            {
+                validActions.Remove(Action.Down);
+            }
+            if (currentMap.obstacles.Contains(new Vector2Int(leftNextState.X, leftNextState.Y)))
+            {
+                validActions.Remove(Action.Left);
+            }
         }
-        if (_obstacles.Contains(GetNextState(state, Action.Right)))
+        else if (state.game == Game.Sokoban)
         {
-            validActions.Remove(Action.Right);
+            // todo
         }
-        if (_obstacles.Contains(GetNextState(state, Action.Down)))
-        {
-            validActions.Remove(Action.Down);
-        }
-        if (_obstacles.Contains(GetNextState(state, Action.Left)))
-        {
-            validActions.Remove(Action.Left);
-        }
-
         return validActions;
     }
 
     private bool IsEnd(State state)
     {
-        return state.Equals(_end);
+        return state.Equals(_end); // to review (sokoban map has no defined endstate)
     }
 
     private void PrintPolicy()
     {
         var gridPolicy = "Grid Policy:\n";
-        for (var y = gridSize.y - 1; y >= 0; y--)
+        for (var y = currentMap.size.y - 1; y >= 0; y--)
         {
             var line = "";
-            for (var x = 0; x < gridSize.x; x++)
+            for (var x = 0; x < currentMap.size.x; x++)
             {
                 var state = new State(x, y);
                 var value = "X";
@@ -518,7 +613,7 @@ public class GameManager : MonoBehaviour
         Debug.Log(gridCoordinates);
     }
 
-    private void PrintPossibleActions()
+    private void printPossibleActions()
     {
         string grid = "Grid Possible Actions:\n";
         for (int y = gridSize.y - 1; y >= 0; y--)
@@ -538,9 +633,78 @@ public class GameManager : MonoBehaviour
         }
         Debug.Log(grid);
     }
-
+    
     public State GetEnd()
     {
         return _end;
+    }
+
+    public Map GenerateGridWorldMap()
+    {
+        Vector2Int dimensions = new Vector2Int(7, 7); // Taille de la grille 7x7
+
+        List<Vector2Int> walls = new List<Vector2Int>
+        {
+            new Vector2Int(0,0), new Vector2Int(1,0), new Vector2Int(2,0),
+            new Vector2Int(3,0), new Vector2Int(4,0), new Vector2Int(5,0),
+            new Vector2Int(6,0), new Vector2Int(0,1), new Vector2Int(0,2),
+            new Vector2Int(0,3), new Vector2Int(0,4), new Vector2Int(0,5),
+            new Vector2Int(0,6), new Vector2Int(1,6), new Vector2Int(2,6),
+            new Vector2Int(3,6), new Vector2Int(4,6), new Vector2Int(5,6),
+            new Vector2Int(6,6), new Vector2Int(6,1), new Vector2Int(6,2),
+            new Vector2Int(6,3), new Vector2Int(6,4), new Vector2Int(6,5),
+            new Vector2Int(4,4), new Vector2Int(5,4), new Vector2Int(4,3)
+        };
+
+        List<Vector2Int> crates = new List<Vector2Int> {};
+
+        List<Vector2Int> targets = new List<Vector2Int>
+        {
+            new Vector2Int(5, 5)
+        };
+
+        Vector2Int spawnPosition = new Vector2Int(1, 1);
+
+        // Création de l'état initial et final
+        State startState = new State(spawnPosition.x, spawnPosition.y);
+        State endState = new State(5, 5);
+
+        return new Map(dimensions, walls, targets, startState, endState);
+    }
+
+    public Map GenerateSokobanMap()
+    {
+        Vector2Int dimensions = new Vector2Int(7, 7); // Taille de la grille 7x7
+
+        List<Vector2Int> walls = new List<Vector2Int>
+        {
+            new Vector2Int(0,0), new Vector2Int(1,0), new Vector2Int(2,0),
+            new Vector2Int(3,0), new Vector2Int(4,0), new Vector2Int(5,0),
+            new Vector2Int(6,0), new Vector2Int(0,1), new Vector2Int(0,2),
+            new Vector2Int(0,3), new Vector2Int(0,4), new Vector2Int(0,5),
+            new Vector2Int(0,6), new Vector2Int(1,6), new Vector2Int(2,6),
+            new Vector2Int(3,6), new Vector2Int(4,6), new Vector2Int(5,6),
+            new Vector2Int(6,6), new Vector2Int(6,1), new Vector2Int(6,2),
+            new Vector2Int(6,3), new Vector2Int(6,4), new Vector2Int(6,5)
+        };
+
+        List<Vector2Int> crates = new List<Vector2Int>
+        {
+            new Vector2Int(4, 2), new Vector2Int(4, 4)
+        };
+
+        List<Vector2Int> targets = new List<Vector2Int>
+        {
+            new Vector2Int(2, 5), new Vector2Int(5, 1)
+        };
+
+        Vector2Int spawnPosition = new Vector2Int(3, 3);
+        List<Vector2Int> spawnList = new List<Vector2Int> { spawnPosition }; // Converti en liste pour uniformiser avec crates et targets
+
+        // Création de l'état initial et final (pour Sokoban, l'état final pourrait ne pas être directement défini)
+        State startState = new State(spawnPosition, crates);
+        State endState = null; // Dans Sokoban, l'état de fin est généralement implicite basé sur les objectifs
+
+        return new Map(dimensions, walls, targets, startState, endState);
     }
 }
