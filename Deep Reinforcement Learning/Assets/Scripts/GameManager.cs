@@ -56,9 +56,13 @@ public class GameManager : MonoBehaviour
         
         PrintPolicy();
         TilemapManager.Instance.Display(currentMap, currentMap.startState, _policy); // Affiche la map et le state
-        
-        buttonPolicyIteration.interactable = true;
-        buttonValueIteration.interactable = true;
+    }
+
+    public void playPolicy()
+    {
+        Debug.Log("Play current policy");
+        currentState = GetNextState(currentState, _policy.GetAction(currentState));
+        TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
     }
 
     /*public void UpdateTilemap(Dictionary<State, Action> policy)
@@ -178,8 +182,8 @@ public class GameManager : MonoBehaviour
 
             policyStable = PolicyImprovement();
         } while (!policyStable);
-
-        //UpdateTilemap(_policy.GetPolicy());
+        
+        PrintPolicy();
         TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
     }
 
@@ -275,7 +279,10 @@ public class GameManager : MonoBehaviour
                 delta = Mathf.Max(delta, Mathf.Abs(oldValue - maxValue));
             }
         } while (delta > theta);
-        //UpdateTilemap(_policy.GetPolicy());
+        
+
+        PrintPolicy();
+        TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
     }
 
     public float GetImmediateReward(State currentState, Action action)
