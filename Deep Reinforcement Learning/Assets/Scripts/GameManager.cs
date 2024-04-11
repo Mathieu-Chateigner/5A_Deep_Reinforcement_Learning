@@ -119,8 +119,7 @@ public class GameManager : MonoBehaviour
     private HashSet<HashSet<Vector2Int>> GetAllCombinations(Map map)
     {
         List<Vector2Int> possiblePositions = new List<Vector2Int>();
-        // Générer une liste de toutes les positions possibles pour les caisses,
-        // en excluant les positions d'obstacles.
+        // Positions possibles pour les caisses sans les positions d'obstacles
         for (int x = 0; x < map.size.x; x++)
         {
             for (int y = 0; y < map.size.y; y++)
@@ -145,7 +144,7 @@ public class GameManager : MonoBehaviour
     {
         if (cratesLeft == 0)
         {
-            // Si aucune caisse n'est laissée, ajoutez la combinaison actuelle à l'ensemble de toutes les combinaisons.
+            // Si aucune caisse n'est laissée, ajoutez la combinaison actuelle aux combinaisons
             allCombinations.Add(new HashSet<Vector2Int>(currentCombination));
             return;
         }
@@ -344,14 +343,14 @@ public class GameManager : MonoBehaviour
             float G = 0;
             HashSet<State> visitedStates = new HashSet<State>();
 
-            // Parcourir l'�pisode de la fin au d�but
+            // Backpropagation
             for (int t = episode.Count - 1; t >= 0; t--)
             {
-                G = 0.9f * G + episode[t].Item3; // R�compense � t
+                G = 0.9f * G + episode[t].Item3; // Reward t
 
                 State stateT = episode[t].Item1;
 
-                // First-Visit : si l'�tat n'a pas �t� d�j� visit� dans cet �pisode
+                // First-Visit : si l'état n'a pas été déjà visité dans cet épisode
                 if (!visitedStates.Contains(stateT))
                 {
                     returnsSum[stateT] += G;
