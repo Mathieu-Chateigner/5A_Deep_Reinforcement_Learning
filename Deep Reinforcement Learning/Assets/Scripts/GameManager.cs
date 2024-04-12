@@ -4,6 +4,20 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
 
+public enum Game
+{
+    GridWorld,
+    Sokoban
+}
+
+public enum Action
+{
+    Up,
+    Right,
+    Down,
+    Left
+}
+
 public class GameManager : MonoBehaviour
 {
     public Vector2Int gridSize;
@@ -19,27 +33,14 @@ public class GameManager : MonoBehaviour
     private Map currentMap;
     private State currentState;
 
-    private Dictionary<State, float> returnsSum;
-    private new Dictionary<State, int> returnsCount;
     private MapManager mapManager;
 
     private void Start()
     {
         mapManager = new MapManager();
-        //InitializeObstacles();
-        //_states = GenerateAllStates();
-
-        //_start = new State(1, 1);
-       
-
-        //PolicyIteration(_states, 0.9f); // Policy iteration
-        //ValueIteration(states, 0.9f); // Value iteration
-
-        //currentMap = GenerateSokobanMap();
-        //_states = GenerateAllStates(Game.Sokoban, currentMap);
 
         Game game = Game.GridWorld;
-        currentMap = mapManager.GetMap(game, 0);
+        currentMap = mapManager.GetMap(game, 1);
         _end = currentMap.endState; // ONLY FOR GRID WORLD (deprecated)
         _states = GenerateAllStates(game, currentMap);
         currentState = currentMap.startState;
@@ -70,7 +71,8 @@ public class GameManager : MonoBehaviour
     public void MonteCarlo(int numEpisode)
     {
         SetInteractivnessButtons(false);
-        MonteCarloFirstVisitOnPolicy(numEpisode);
+        _stateValues = MonteCarloOnPolicy(numEpisode, 0.9f, 10000, 0.9f, true); // First visit
+        PrintStateValues();
         TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
         SetInteractivnessButtons(true);
     }
@@ -315,11 +317,11 @@ public class GameManager : MonoBehaviour
         TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
         SetInteractivnessButtons(true);
     }
-
-    public Dictionary<State, float> MonteCarloFirstVisitOnPolicy(int numEpisode)
+    
+    public Dictionary<State, float> MonteCarloOnPolicy(int numEpisode, float discountFactor, int maxSteps, float explorationFactor, bool firstVisit = true)
     {
-        returnsSum = new Dictionary<State, float>();
-        returnsCount = new Dictionary<State, int>();
+        Dictionary<State, float>  returnsSum = new Dictionary<State, float>();
+        Dictionary<State, int> returnsCount = new Dictionary<State, int>();
 
         foreach (var state in _states)
         {
@@ -329,41 +331,38 @@ public class GameManager : MonoBehaviour
 
         for (int e = 0; e < numEpisode; e++)
         {
-            // Generate using policy, an episode State0, Action0, Reward0, State1, Action1, Reward1, ..., StateT, ActionT, RewardT
-            // G = 0
-            // for timeStep t = T - 1 to t = 0 (of the episode e) do {
-            //      G  = G + RewardT+1
-            //      if StateT is not the sequence State0, State1, ..., StateT-1 then {
-            //          returnsSum[StateT] = returnsSum[StateT] + G
-            //          returnsCount[StateT] = returnsCount[StateT] + 1
-            //      }
-            // }
-
-            List<(State, Action, float)> episode = GenerateEpisode(); // Simulation
+            List<(State, Action, float)> episode = GenerateEpisode(maxSteps, explorationFactor); // Simulation
 
             float G = 0;
             HashSet<State> visitedStates = new HashSet<State>();
 
             // Backpropagation
-            for (int t = episode.Count - 1; t >= 0; t--)
+            for (int t = episode.Count - 1; t >= 1; t--)
             {
-                G = 0.9f * G + episode[t].Item3; // Reward t
-
+                G = discountFactor * G + episode[t-1].Item3; // Reward t-1
+                //G = 1;
                 State stateT = episode[t].Item1;
 
-                // First-Visit : si l'état n'a pas été déjà visité dans cet épisode
-                if (!visitedStates.Contains(stateT))
+                if(firstVisit) // First visit : si l'état n'a pas été déjà visité dans cet épisode
+                {
+                    if (!visitedStates.Contains(stateT))
+                    {
+                        returnsSum[stateT] += G;
+                        returnsCount[stateT] += 1;
+                        visitedStates.Add(stateT);
+                    }
+                }
+                else // Every visit
                 {
                     returnsSum[stateT] += G;
                     returnsCount[stateT] += 1;
-                    visitedStates.Add(stateT);
                 }
             }
 
+            // Update la policy entre chaque épisode (redondant mais flemme)
             Dictionary<State, float> values = new Dictionary<State, float>();
             foreach (State state in returnsSum.Keys)
             {
-                if (IsEnd(state)) continue;
                 if (returnsCount[state] > 0)
                 {
                     values[state] = returnsSum[state] / returnsCount[state];
@@ -376,7 +375,6 @@ public class GameManager : MonoBehaviour
         Dictionary<State, float> stateValues = new Dictionary<State, float>();
         foreach (State state in returnsSum.Keys)
         {
-            if (IsEnd(state)) continue;
             if(returnsCount[state] > 0)
             {
                 stateValues[state] = returnsSum[state] / returnsCount[state];
@@ -385,11 +383,10 @@ public class GameManager : MonoBehaviour
         return stateValues;
     }
 
-    private List<(State, Action, float)> GenerateEpisode()
+    private List<(State, Action, float)> GenerateEpisode(int maxSteps, float explorationFactor)
     {
         List<(State, Action, float)> episode = new List<(State, Action, float)>();
-        State currentState = currentMap.startState; // Commencez � l'�tat de d�part
-        HashSet<State> visitedStates = new HashSet<State>(); // Pour d�tecter les boucles
+        State currentState = currentMap.startState; // Start state (without exploring start)
 
         int step = 0;
         while (!IsEnd(currentState))
@@ -397,7 +394,8 @@ public class GameManager : MonoBehaviour
             Action action;
             List<Action> validActions = GetValidActions(currentState);
 
-            if (Random.value < 0.9f) // Exploration avec une probabilit� epsilon
+            // Espilon greedy
+            if (Random.value < explorationFactor) // Exploration
             {
                 action = validActions[Random.Range(0, validActions.Count)];
             }
@@ -406,14 +404,11 @@ public class GameManager : MonoBehaviour
                 action = _policy.GetAction(currentState);
             }
 
-            //action = validActions[Random.Range(0, validActions.Count)];
-            //action = policy.GetAction(currentState); // Suit la politique
-
             State nextState = GetNextState(currentState, action);
             float reward = GetImmediateReward(currentState, action);
 
-            // Boucle d�tect�e ou �tat final impossible
-            if (step++ > 100)
+            // Max steps atteint
+            if (++step > maxSteps)
             {
                 episode.Add((currentState, default(Action), -1f)); // Echec
                 break;
@@ -421,18 +416,18 @@ public class GameManager : MonoBehaviour
 
             episode.Add((currentState, action, reward));
 
-            currentState = nextState; // Mettez � jour l'�tat courant pour la prochaine it�ration
+            currentState = nextState; // L'état courant devient l'état suivant
+        }
 
-            if (IsEnd(currentState))
-            {
-                episode.Add((currentState, default(Action), 1f));
-                break;
-            }
+        if (IsEnd(currentState))
+        {
+            episode.Add((currentState, default(Action), 1f));
         }
 
         return episode;
     }
 
+    // Update policy based on state values (les flèches pointent vers la valeur max des states suivants possibles)
     void UpdatePolicyBasedOnStateValues(List<State> states, Dictionary<State, float> values)
     {
         foreach (State state in states)

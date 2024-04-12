@@ -1,14 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum Action
-{
-    Up,
-    Right,
-    Down,
-    Left
-}
-
 public class Policy
 {
     private readonly Dictionary<State, Action> _policy = new ();

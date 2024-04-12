@@ -2,18 +2,15 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum Game
-{
-    GridWorld,
-    Sokoban
-}
-
 public class State
 {
     public Game game;
+
+    // GridWorld (peut être remplacé par Vector2Int player mais flemme)
     public int X { get; set; }
     public int Y { get; set; }
 
+    // Sokoban
     public Vector2Int player;
     public List<Vector2Int> crates;
 
