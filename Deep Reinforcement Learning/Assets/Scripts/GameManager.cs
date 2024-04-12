@@ -70,13 +70,97 @@ public class GameManager : MonoBehaviour
         TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
     }
 
-    public void MonteCarlo(int numEpisode)
+    public void ExecMonteCarlo(int numEpisode)
     {
         SetInteractivnessButtons(false);
         _stateValues = MonteCarloOnPolicy(numEpisode, 0.9f, 10000, 0.9f, true); // First visit
         PrintStateValues();
+        
         TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
         SetInteractivnessButtons(true);
+    }
+
+    public void ExecQLearning(int numEpisode)
+    {
+        SetInteractivnessButtons(false);
+        QLearning(numEpisode, 0.2f, 0.9f, 0.9f, 10000);
+
+        TilemapManager.Instance.Display(currentMap, currentState, _policy); // Affiche la map et le state
+        SetInteractivnessButtons(true);
+    }
+
+    // QLearning : Off policy
+    public void QLearning(int numEpisode, float alpha, float discountFactor, float epsilon, int maxSteps)
+    {
+        Dictionary<(State, Action), float> qValues = new Dictionary<(State, Action), float>();
+
+        foreach (var state in _states)
+        {
+            foreach (Action action in Enum.GetValues(typeof(Action)))
+            {
+                qValues[(state, action)] = 0.0f;
+            }
+        }
+
+        for (int episode = 0; episode < numEpisode; episode++)
+        {
+            State state = currentMap.startState;
+            int step = 0;
+
+            while (!IsEnd(state) && step < maxSteps)
+            {
+                Action action = ChooseAction(state, qValues, epsilon);
+                State nextState = GetNextState(state, action);
+                float reward = GetImmediateReward(state, action);
+
+                float maxQNext = Enum.GetValues(typeof(Action)).Cast<Action>().Max(a => qValues[(nextState, a)]);
+                qValues[(state, action)] += alpha * (reward + discountFactor * maxQNext - qValues[(state, action)]);
+
+                state = nextState;
+                step++;
+            }
+        }
+        
+        UpdatePolicyBasedOnQValues(qValues);
+    }
+
+    // Used by QLearning
+    private void UpdatePolicyBasedOnQValues(Dictionary<(State, Action), float> qValues)
+    {
+        foreach (var state in _states)
+        {
+            var bestAction = qValues.Where(q => q.Key.Item1 == state).OrderByDescending(q => q.Value).First().Key.Item2;
+            _policy.UpdatePolicy(state, bestAction);
+        }
+    }
+
+
+    // Used by QLearning
+    // Choisi une action avec epsilon greedy
+    private Action ChooseAction(State state, Dictionary<(State, Action), float> qValues, float epsilon)
+    {
+        if (UnityEngine.Random.value < epsilon)
+        {
+            // Exploration
+            var actions = Enum.GetValues(typeof(Action)).Cast<Action>().ToList();
+            return actions[UnityEngine.Random.Range(0, actions.Count)];
+        }
+        else
+        {
+            // Exploitation
+            float maxValue = float.MinValue;
+            Action bestAction = Action.Up;
+            foreach (Action action in Enum.GetValues(typeof(Action)))
+            {
+                float value = qValues[(state, action)];
+                if (value > maxValue)
+                {
+                    maxValue = value;
+                    bestAction = action;
+                }
+            }
+            return bestAction;
+        }
     }
 
     private List<State> GenerateAllStates(Game game, Map map)
