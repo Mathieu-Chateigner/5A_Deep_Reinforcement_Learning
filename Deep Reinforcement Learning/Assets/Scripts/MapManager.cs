@@ -93,24 +93,29 @@ public class MapManager : MonoBehaviour
 
         List<Vector2Int> walls = new List<Vector2Int>
         {
-            new Vector2Int(0,0), new Vector2Int(1,0), new Vector2Int(2,0),
-            new Vector2Int(3,0), new Vector2Int(4,0), new Vector2Int(5,0),
-            new Vector2Int(6,0), new Vector2Int(0,1), new Vector2Int(0,2),
-            new Vector2Int(0,3), new Vector2Int(0,4), new Vector2Int(0,5),
-            new Vector2Int(0,6), new Vector2Int(1,6), new Vector2Int(2,6),
-            new Vector2Int(3,6), new Vector2Int(4,6), new Vector2Int(5,6),
-            new Vector2Int(6,6), new Vector2Int(6,1), new Vector2Int(6,2),
-            new Vector2Int(6,3), new Vector2Int(6,4), new Vector2Int(6,5)
+            new (2, 3), new (3, 4), new (2, 4)
         };
+
+        for (var i = 0; i < dimensions.x; i++)
+        {
+            walls.Add(new (i, 0));
+            walls.Add(new (i, dimensions.y-1));
+        }
+        
+        for (var j = 0; j < dimensions.y; j++)
+        {
+            walls.Add(new (0, j));
+            walls.Add(new (dimensions.x-1, j));
+        }
 
         List<Vector2Int> crates = new List<Vector2Int>
         {
-            new Vector2Int(4, 2), new Vector2Int(4, 4)
+            new Vector2Int(4, 2)
         };
 
         List<Vector2Int> targets = new List<Vector2Int>
         {
-            new Vector2Int(2, 5), new Vector2Int(5, 1)
+            new Vector2Int(2, 5)
         };
 
         Vector2Int spawnPosition = new Vector2Int(3, 3);
