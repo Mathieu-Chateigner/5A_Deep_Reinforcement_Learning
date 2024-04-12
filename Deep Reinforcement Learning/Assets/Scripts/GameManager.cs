@@ -41,7 +41,7 @@ public class GameManager : MonoBehaviour
         mapManager = new MapManager();
 
         Game game = Game.Sokoban;
-        currentMap = mapManager.GetMap(game, 0);
+        currentMap = mapManager.GetMap(game, 1);
         gridSize = currentMap.size; // deprecated but still used
         _end = currentMap.endState; // deprecated but still used by GridWorld
         _states = GenerateAllStates(game, currentMap);

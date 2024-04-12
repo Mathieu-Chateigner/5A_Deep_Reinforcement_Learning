@@ -14,6 +14,7 @@ public class MapManager : MonoBehaviour
         gridWorldMaps.Add(GenerateGridWorldMap1());
         gridWorldMaps.Add(GenerateGridWorldMap2());
         sokobanMaps.Add(GenerateSokobanMap1());
+        sokobanMaps.Add(GenerateSokobanMap2());
     }
 
     public Map GetMap(Game game, int index)
@@ -114,11 +115,44 @@ public class MapManager : MonoBehaviour
         };
 
         Vector2Int spawnPosition = new Vector2Int(3, 3);
-        List<Vector2Int> spawnList = new List<Vector2Int> { spawnPosition }; // Converti en liste pour uniformiser avec crates et targets
 
-        // Création de l'état initial et final (pour Sokoban, l'état final pourrait ne pas être directement défini)
+        // Création de l'état initial et final (pour Sokoban, l'état final ne sert à rien)
         State startState = new State(spawnPosition, crates);
-        State endState = null; // Dans Sokoban, l'état de fin est généralement implicite basé sur les objectifs
+        State endState = null;
+
+        return new Map(dimensions, walls, targets, startState, endState);
+    }
+
+    public Map GenerateSokobanMap2()
+    {
+        Vector2Int dimensions = new Vector2Int(5, 5);
+
+        List<Vector2Int> walls = new List<Vector2Int>
+        {
+            new Vector2Int(0,0), new Vector2Int(1,0), new Vector2Int(2,0),
+            new Vector2Int(3,0), new Vector2Int(4,0),
+            new Vector2Int(0,1), new Vector2Int(0,2),
+            new Vector2Int(0,3), new Vector2Int(0,4),
+            new Vector2Int(0,4), new Vector2Int(1,4), new Vector2Int(2,4),
+            new Vector2Int(3,4), new Vector2Int(4,4),
+            new Vector2Int(4,0), new Vector2Int(4,1), new Vector2Int(4,2), new Vector2Int(4,3)
+        };
+
+        List<Vector2Int> crates = new List<Vector2Int>
+        {
+            new Vector2Int(2, 2)
+        };
+
+        List<Vector2Int> targets = new List<Vector2Int>
+        {
+            new Vector2Int(1, 1)
+        };
+
+        Vector2Int spawnPosition = new Vector2Int(3, 3);
+
+        // Création de l'état initial et final (pour Sokoban, l'état final ne sert à rien)
+        State startState = new State(spawnPosition, crates);
+        State endState = null;
 
         return new Map(dimensions, walls, targets, startState, endState);
     }
