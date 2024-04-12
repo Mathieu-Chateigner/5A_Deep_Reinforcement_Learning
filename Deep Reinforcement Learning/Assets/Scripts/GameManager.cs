@@ -42,7 +42,8 @@ public class GameManager : MonoBehaviour
 
         Game game = Game.Sokoban;
         currentMap = mapManager.GetMap(game, 0);
-        _end = currentMap.endState; // ONLY FOR GRID WORLD (deprecated)
+        gridSize = currentMap.size; // deprecated but still used
+        _end = currentMap.endState; // deprecated but still used by GridWorld
         _states = GenerateAllStates(game, currentMap);
         currentState = currentMap.startState;
 
@@ -528,24 +529,37 @@ public class GameManager : MonoBehaviour
                 case Action.Right: newPosition.x += 1; break;
             }
 
-            // Déplacer le joueur et potentiellement une caisse
-            if (!currentMap.obstacles.Contains(newPosition) &&
-                !state.crates.Any(crate => crate == newPosition))
+            // Vérifiez si la nouvelle position est un obstacle
+            if (currentMap.obstacles.Contains(newPosition))
             {
-                List<Vector2Int> newCrates = new List<Vector2Int>(state.crates);
-                int crateIndex = newCrates.FindIndex(crate => crate == newPosition);
-                if (crateIndex != -1)
-                {
-                    // Calculer la nouvelle position de la caisse
-                    Vector2Int crateNewPosition = newPosition + (newPosition - new Vector2Int(state.player.x, state.player.y));
-                    if (!currentMap.obstacles.Contains(crateNewPosition) && !state.crates.Any(crate => crate == crateNewPosition))
-                    {
-                        newCrates[crateIndex] = crateNewPosition; // Déplacer la caisse
-                    }
-                }
-                return new State(newPosition, newCrates); // État avec joueur et caisses mis à jour
+                return state; // Aucun mouvement si obstacle
             }
+
+            // Vérifiez si la nouvelle position est une caisse
+            if (state.crates.Contains(newPosition))
+            {
+                Vector2Int nextCratePosition = newPosition + (newPosition - state.player);  // La position suivante pour la caisse
+                if (!currentMap.obstacles.Contains(nextCratePosition) && !state.crates.Contains(nextCratePosition))
+                {
+                    List<Vector2Int> newCrates = new List<Vector2Int>(state.crates);
+                    newCrates.Remove(newPosition);  // Enlevez la caisse de l'ancienne position
+                    newCrates.Add(nextCratePosition);  // Ajoutez la caisse à la nouvelle position
+                    return new State(newPosition, newCrates);
+                }
+                else
+                {
+                    return state;  // Aucun mouvement si la caisse ne peut pas bouger
+                }
+            }
+
+            // Si pas de caisse à la nouvelle position, le joueur se déplace librement
+            if(!_states.Contains(new State(newPosition, state.crates)))
+            {
+                Debug.LogError("STATE INCONNU");
+            }
+            return new State(newPosition, state.crates);
         }
+        
         return state;
     }
 
@@ -588,9 +602,13 @@ public class GameManager : MonoBehaviour
             foreach (Action action in Enum.GetValues(typeof(Action)))
             {
                 State nextState = GetNextState(state, action);
-                if (nextState.player != state.player) // Si le joueur a bougé
+                if (nextState.player != state.player)  // Si le joueur a pu bouger
                     validActions.Add(action);
             }
+            /*if (state.player.y < gridSize.y - 1) validActions.Add(Action.Up); // Peut aller vers le haut
+            if (state.player.x < gridSize.x - 1) validActions.Add(Action.Right); // Peut aller vers la droite
+            if (state.player.y > 0) validActions.Add(Action.Down); // Peut aller vers le bas
+            if (state.player.x > 0) validActions.Add(Action.Left); // Peut aller vers la gauche*/
         }
         return validActions;
     }
@@ -599,7 +617,7 @@ public class GameManager : MonoBehaviour
     {
         if(state.game == Game.GridWorld)
         {
-            state.Equals(_end);
+            return state.Equals(_end);
         }
         else if(state.game == Game.Sokoban) 
         {
@@ -686,80 +704,6 @@ public class GameManager : MonoBehaviour
             grid += line + "\n";
         }
         Debug.Log(grid);
-    }
-    
-    public State GetEnd()
-    {
-        return _end;
-    }
-
-    public Map GenerateGridWorldMap()
-    {
-        Vector2Int dimensions = new Vector2Int(7, 7); // Taille de la grille 7x7
-
-        List<Vector2Int> walls = new List<Vector2Int>
-        {
-            new Vector2Int(0,0), new Vector2Int(1,0), new Vector2Int(2,0),
-            new Vector2Int(3,0), new Vector2Int(4,0), new Vector2Int(5,0),
-            new Vector2Int(6,0), new Vector2Int(0,1), new Vector2Int(0,2),
-            new Vector2Int(0,3), new Vector2Int(0,4), new Vector2Int(0,5),
-            new Vector2Int(0,6), new Vector2Int(1,6), new Vector2Int(2,6),
-            new Vector2Int(3,6), new Vector2Int(4,6), new Vector2Int(5,6),
-            new Vector2Int(6,6), new Vector2Int(6,1), new Vector2Int(6,2),
-            new Vector2Int(6,3), new Vector2Int(6,4), new Vector2Int(6,5),
-            new Vector2Int(4,4), new Vector2Int(5,4), new Vector2Int(4,3)
-        };
-
-        List<Vector2Int> crates = new List<Vector2Int> {};
-
-        List<Vector2Int> targets = new List<Vector2Int>
-        {
-            new Vector2Int(5, 5)
-        };
-
-        Vector2Int spawnPosition = new Vector2Int(1, 1);
-
-        // Création de l'état initial et final
-        State startState = new State(spawnPosition.x, spawnPosition.y);
-        State endState = new State(5, 5);
-
-        return new Map(dimensions, walls, targets, startState, endState);
-    }
-
-    public Map GenerateSokobanMap()
-    {
-        Vector2Int dimensions = new Vector2Int(7, 7); // Taille de la grille 7x7
-
-        List<Vector2Int> walls = new List<Vector2Int>
-        {
-            new Vector2Int(0,0), new Vector2Int(1,0), new Vector2Int(2,0),
-            new Vector2Int(3,0), new Vector2Int(4,0), new Vector2Int(5,0),
-            new Vector2Int(6,0), new Vector2Int(0,1), new Vector2Int(0,2),
-            new Vector2Int(0,3), new Vector2Int(0,4), new Vector2Int(0,5),
-            new Vector2Int(0,6), new Vector2Int(1,6), new Vector2Int(2,6),
-            new Vector2Int(3,6), new Vector2Int(4,6), new Vector2Int(5,6),
-            new Vector2Int(6,6), new Vector2Int(6,1), new Vector2Int(6,2),
-            new Vector2Int(6,3), new Vector2Int(6,4), new Vector2Int(6,5)
-        };
-
-        List<Vector2Int> crates = new List<Vector2Int>
-        {
-            new Vector2Int(4, 2), new Vector2Int(4, 4)
-        };
-
-        List<Vector2Int> targets = new List<Vector2Int>
-        {
-            new Vector2Int(2, 5), new Vector2Int(5, 1)
-        };
-
-        Vector2Int spawnPosition = new Vector2Int(3, 3);
-        List<Vector2Int> spawnList = new List<Vector2Int> { spawnPosition }; // Converti en liste pour uniformiser avec crates et targets
-
-        // Création de l'état initial et final (pour Sokoban, l'état final pourrait ne pas être directement défini)
-        State startState = new State(spawnPosition, crates);
-        State endState = null; // Dans Sokoban, l'état de fin est généralement implicite basé sur les objectifs
-
-        return new Map(dimensions, walls, targets, startState, endState);
     }
 
     private void SetInteractivnessButtons(bool interactable)
