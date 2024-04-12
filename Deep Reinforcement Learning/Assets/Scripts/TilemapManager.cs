@@ -35,6 +35,7 @@ public class TilemapManager : MonoBehaviour
         return tileList.First(tile => tile.name.Equals("question_mark"));
     }
 
+    // Fonction d'affichage (non optimisée, attention ça pique)
     public void Display(Map map, State currentState, Policy policy)
     {
         tilemap.ClearAllTiles(); // Efface la tilemap actuelle pour le nouvel affichage
@@ -62,24 +63,19 @@ public class TilemapManager : MonoBehaviour
             {
                 tilemap.SetTile(new Vector3Int(crate.x, crate.y, 0), tileList.First(tile => tile.name.Equals("crate")));
             }
-        }
-        else if (currentState.game == Game.GridWorld)
-        {
-            // Afficher le joueur
-            tilemap.SetTile(new Vector3Int(currentState.X, currentState.Y, 0), GetPlayerTile());
 
-            // Afficher la policy (arrows)
-            foreach (var (state, action) in policy.GetPolicy())
+            // Récupère seulement les states ayant les mêmes positions de caisses
+            var relevantStates = policy.GetPolicy()
+            .Where(pair => pair.Key.crates.All(crate => currentState.crates.Contains(crate)) && pair.Key.crates.Count == currentState.crates.Count)
+            .Select(pair => new { State = pair.Key, Action = pair.Value })
+            .ToList();
+            Debug.Log(relevantStates.Count + " states to display.");
+
+            // Afficher la policy pour ces états
+            foreach (var entry in relevantStates)
             {
-                Vector3Int tilePosition = new Vector3Int(state.X, state.Y, 0);
-                if (tilePosition == new Vector3Int(currentState.X, currentState.Y, 0)) continue; // Player tile
-
-                /*bool onCrate = false;
-                foreach (Vector2Int crate in currentState.crates)
-                {
-                    if (tilePosition == new Vector3Int(crate.x, crate.y, 0)) onCrate = true;
-                }
-                if (onCrate) continue; // Crate title*/
+                Vector3Int tilePosition = new Vector3Int(entry.State.player.x, entry.State.player.y, 0);
+                if (tilePosition == new Vector3Int(currentState.player.x, currentState.player.y, 0)) continue; // Player tile
 
                 bool onWall = false;
                 foreach (Vector2Int obstacle in map.obstacles)
@@ -95,7 +91,42 @@ public class TilemapManager : MonoBehaviour
                 }
                 if (onTarget) continue; // Target tile
 
-                tilemap.SetTile(tilePosition, GetTileFromAction(action));
+                bool onCrate = false;
+                foreach (Vector2Int crate in currentState.crates)
+                {
+                    if (tilePosition == new Vector3Int(crate.x, crate.y, 0)) onCrate = true;
+                }
+                if (onCrate) continue; // Crate tile
+
+                tilemap.SetTile(tilePosition, GetTileFromAction(entry.Action)); // Afficher la flèche correspondant à l'action
+            }
+        }
+        else if (currentState.game == Game.GridWorld)
+        {
+            // Afficher le joueur
+            tilemap.SetTile(new Vector3Int(currentState.X, currentState.Y, 0), GetPlayerTile());
+
+            // Afficher la policy (arrows)
+            foreach (var (state, action) in policy.GetPolicy())
+            {
+                Vector3Int tilePosition = new Vector3Int(state.X, state.Y, 0);
+                if (tilePosition == new Vector3Int(currentState.X, currentState.Y, 0)) continue; // Player tile
+
+                bool onWall = false;
+                foreach (Vector2Int obstacle in map.obstacles)
+                {
+                    if (tilePosition == new Vector3Int(obstacle.x, obstacle.y, 0)) onWall = true;
+                }
+                if (onWall) continue; // Wall tile
+
+                bool onTarget = false;
+                foreach (Vector2Int target in map.targets)
+                {
+                    if (tilePosition == new Vector3Int(target.x, target.y, 0)) onTarget = true;
+                }
+                if (onTarget) continue; // Target tile
+
+                tilemap.SetTile(tilePosition, GetTileFromAction(action)); // Afficher la flèche correspondant à l'action
             }
         }
     }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -39,8 +40,8 @@ public class GameManager : MonoBehaviour
     {
         mapManager = new MapManager();
 
-        Game game = Game.GridWorld;
-        currentMap = mapManager.GetMap(game, 1);
+        Game game = Game.Sokoban;
+        currentMap = mapManager.GetMap(game, 0);
         _end = currentMap.endState; // ONLY FOR GRID WORLD (deprecated)
         _states = GenerateAllStates(game, currentMap);
         currentState = currentMap.startState;
@@ -395,9 +396,9 @@ public class GameManager : MonoBehaviour
             List<Action> validActions = GetValidActions(currentState);
 
             // Espilon greedy
-            if (Random.value < explorationFactor) // Exploration
+            if (UnityEngine.Random.value < explorationFactor) // Exploration
             {
-                action = validActions[Random.Range(0, validActions.Count)];
+                action = validActions[UnityEngine.Random.Range(0, validActions.Count)];
             }
             else // Exploitation
             {
@@ -473,7 +474,18 @@ public class GameManager : MonoBehaviour
         }
         else if (currentState.game == Game.Sokoban)
         {
-            // todo
+            int totalTargets = currentMap.targets.Count;
+            int cratesOnTargetNext = nextState.crates.Count(crate => currentMap.targets.Contains(crate));
+
+            // Calculer le ratio des caisses sur les cibles pour l'état suivant
+            float reward = (float)cratesOnTargetNext / totalTargets;
+            //return reward;
+
+            // Différence de ratio entre l'état actuel et le suivant pour renforcer le progrès
+            int cratesOnTargetCurrent = currentState.crates.Count(crate => currentMap.targets.Contains(crate));
+            float currentReward = (float)cratesOnTargetCurrent / totalTargets;
+
+            return reward - currentReward;
         }
         return 0.0f;
     }
@@ -507,8 +519,33 @@ public class GameManager : MonoBehaviour
         }
        else if(state.game == Game.Sokoban)
        {
-            // todo
-       }
+            Vector2Int newPosition = new Vector2Int(state.player.x, state.player.y);
+            switch (action)
+            {
+                case Action.Up: newPosition.y += 1; break;
+                case Action.Down: newPosition.y -= 1; break;
+                case Action.Left: newPosition.x -= 1; break;
+                case Action.Right: newPosition.x += 1; break;
+            }
+
+            // Déplacer le joueur et potentiellement une caisse
+            if (!currentMap.obstacles.Contains(newPosition) &&
+                !state.crates.Any(crate => crate == newPosition))
+            {
+                List<Vector2Int> newCrates = new List<Vector2Int>(state.crates);
+                int crateIndex = newCrates.FindIndex(crate => crate == newPosition);
+                if (crateIndex != -1)
+                {
+                    // Calculer la nouvelle position de la caisse
+                    Vector2Int crateNewPosition = newPosition + (newPosition - new Vector2Int(state.player.x, state.player.y));
+                    if (!currentMap.obstacles.Contains(crateNewPosition) && !state.crates.Any(crate => crate == crateNewPosition))
+                    {
+                        newCrates[crateIndex] = crateNewPosition; // Déplacer la caisse
+                    }
+                }
+                return new State(newPosition, newCrates); // État avec joueur et caisses mis à jour
+            }
+        }
         return state;
     }
 
@@ -548,14 +585,27 @@ public class GameManager : MonoBehaviour
         }
         else if (state.game == Game.Sokoban)
         {
-            // todo
+            foreach (Action action in Enum.GetValues(typeof(Action)))
+            {
+                State nextState = GetNextState(state, action);
+                if (nextState.player != state.player) // Si le joueur a bougé
+                    validActions.Add(action);
+            }
         }
         return validActions;
     }
 
     private bool IsEnd(State state)
     {
-        return state.Equals(_end); // to review (sokoban map has no defined endstate)
+        if(state.game == Game.GridWorld)
+        {
+            state.Equals(_end);
+        }
+        else if(state.game == Game.Sokoban) 
+        {
+            return state.crates.All(crate => currentMap.targets.Contains(crate)) && state.crates.Count == currentMap.targets.Count;
+        }
+        return false;
     }
 
     private void PrintPolicy()
